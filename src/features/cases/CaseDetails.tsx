@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -15,7 +16,12 @@ import {
 import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/Card";
 import { formatDate } from "../../lib/dates";
 import { ApiError } from "../../lib/api";
 import { CaseStatusBadge } from "./CaseStatusBadge";
@@ -27,11 +33,7 @@ import {
   getCaseLogs,
   type AnalysisVersion,
 } from "./cases.api";
-import {
-  getCaseStatus,
-  getCaseTitle,
-  readCaseField,
-} from "./cases.utils";
+import { getCaseStatus, getCaseTitle, readCaseField } from "./cases.utils";
 
 const activeAnalysisStatuses = new Set(["queued", "running"]);
 
@@ -60,7 +62,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function toDisplayValue(value: unknown): string {
   if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
   if (isRecord(value)) {
     for (const key of ["name", "title", "label", "value", "_id", "id"]) {
       const nested = value[key];
@@ -91,7 +94,11 @@ function getFiles(caseItem: unknown): unknown[] {
 
 function getFileName(file: unknown, index: number) {
   if (!isRecord(file)) return `Case file ${index + 1}`;
-  return toDisplayValue(file.originalName || file.fileName || file.name || file.filename) || `Case file ${index + 1}`;
+  return (
+    toDisplayValue(
+      file.originalName || file.fileName || file.name || file.filename,
+    ) || `Case file ${index + 1}`
+  );
 }
 
 function getFileType(file: unknown) {
@@ -109,17 +116,26 @@ function getFileSize(file: unknown) {
 function getFileDownloadUrl(file: unknown) {
   if (!isRecord(file)) return null;
   const downloadUrl = file.downloadUrl;
-  return typeof downloadUrl === "string" && downloadUrl.trim() ? downloadUrl : null;
+  return typeof downloadUrl === "string" && downloadUrl.trim()
+    ? downloadUrl
+    : null;
 }
 
 function getDownloadHref(downloadUrl: string) {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
-  return downloadUrl.startsWith("http") ? downloadUrl : `${apiBaseUrl}${downloadUrl}`;
+  return downloadUrl.startsWith("http")
+    ? downloadUrl
+    : `${apiBaseUrl}${downloadUrl}`;
 }
 
 function statusFromPayload(payload: unknown) {
-  const data = isRecord(payload) && isRecord(payload.data) ? payload.data : payload;
-  return toDisplayValue(isRecord(data) ? data.openAiAnalysisStatus ?? data.status : "").toLowerCase() || "not_started";
+  const data =
+    isRecord(payload) && isRecord(payload.data) ? payload.data : payload;
+  return (
+    toDisplayValue(
+      isRecord(data) ? (data.openAiAnalysisStatus ?? data.status) : "",
+    ).toLowerCase() || "not_started"
+  );
 }
 
 function dataRecord(payload: unknown) {
@@ -158,15 +174,25 @@ function score(value: number | null, max = 100) {
 }
 
 function formatStatus(status: string) {
-  return status
-    .replace(/[_-]+/g, " ")
-    .trim()
-    .replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) || "Unknown";
+  return (
+    status
+      .replace(/[_-]+/g, " ")
+      .trim()
+      .replace(
+        /\w\S*/g,
+        (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+      ) || "Unknown"
+  );
 }
 
 function firstAnalysisValue(analysis: unknown, keys: string[]) {
   if (!isRecord(analysis)) return null;
-  return keys.map((key) => analysis[key]).find((value) => value !== undefined && value !== null && value !== "") ?? null;
+  return (
+    keys
+      .map((key) => analysis[key])
+      .find((value) => value !== undefined && value !== null && value !== "") ??
+    null
+  );
 }
 
 function asList(value: unknown) {
@@ -176,14 +202,23 @@ function asList(value: unknown) {
 }
 
 function JsonValue({ value }: { value: unknown }) {
-  if (value === null || value === undefined || value === "") return <span className="text-ink-500">Not provided</span>;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return <span>{String(value)}</span>;
+  if (value === null || value === undefined || value === "")
+    return <span className="text-ink-500">Not provided</span>;
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  )
+    return <span className="break-words">{String(value)}</span>;
   if (Array.isArray(value)) {
     if (!value.length) return <span className="text-ink-500">None</span>;
     return (
       <div className="space-y-2">
         {value.map((item, index) => (
-          <div key={index} className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+          <div
+            key={index}
+            className="min-w-0 rounded-lg border border-ink-200 bg-ink-50 p-3"
+          >
             <JsonValue value={item} />
           </div>
         ))}
@@ -196,8 +231,13 @@ function JsonValue({ value }: { value: unknown }) {
     return (
       <div className="space-y-2">
         {entries.map(([key, nested]) => (
-          <div key={key} className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">{key}</p>
+          <div
+            key={key}
+            className="min-w-0 rounded-lg border border-ink-200 bg-ink-50 p-3"
+          >
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
+              {key}
+            </p>
             <JsonValue value={nested} />
           </div>
         ))}
@@ -207,11 +247,26 @@ function JsonValue({ value }: { value: unknown }) {
   return <span>{String(value)}</span>;
 }
 
-function DetailRow({ label, value }: { label: string; value: unknown }) {
+function DetailRow({
+  label,
+  value,
+  breakAll = false,
+}: {
+  label: string;
+  value: unknown;
+  breakAll?: boolean;
+}) {
   return (
-    <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm text-ink-950">
+    <div className="min-w-0">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+        {label}
+      </dt>
+      <dd
+        className={[
+          "mt-1 text-sm text-ink-950",
+          breakAll ? "break-all" : "break-words",
+        ].join(" ")}
+      >
         {value || value === 0 ? String(value) : "Not provided"}
       </dd>
     </div>
@@ -222,27 +277,76 @@ function MetricCard({ label, value }: { label: string; value: unknown }) {
   return (
     <Card className="rounded-xl shadow-soft">
       <CardContent>
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{label}</p>
-        <p className="mt-2 break-words text-2xl font-semibold text-ink-950">{String(value ?? "Not provided")}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+          {label}
+        </p>
+        <p className="mt-2 break-words text-2xl font-semibold text-ink-950">
+          {String(value ?? "Not provided")}
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-function AnalysisBanner({ status, duplicate, insufficientCredits }: { status: string; duplicate: boolean; insufficientCredits: boolean }) {
+function AnalysisBanner({
+  status,
+  duplicate,
+  insufficientCredits,
+}: {
+  status: string;
+  duplicate: boolean;
+  insufficientCredits: boolean;
+}) {
   const state = insufficientCredits
-    ? { title: "Analysis limit reached.", message: "Please purchase more analysis credits to continue.", tone: "error" as const, Icon: AlertTriangle }
+    ? {
+        title: "Analysis limit reached.",
+        message: "Please purchase more analysis credits to continue.",
+        tone: "error" as const,
+        Icon: AlertTriangle,
+      }
     : duplicate
-      ? { title: "Existing completed analysis reused.", message: "No new analysis job was queued.", tone: "success" as const, Icon: CheckCircle2 }
+      ? {
+          title: "Existing completed analysis reused.",
+          message: "No new analysis job was queued.",
+          tone: "success" as const,
+          Icon: CheckCircle2,
+        }
       : status === "queued"
-        ? { title: "Preparing Analysis", message: "Your case is waiting for an AI worker.", tone: "info" as const, Icon: Clock }
+        ? {
+            title: "Preparing Analysis",
+            message: "Your case is waiting for an AI worker.",
+            tone: "info" as const,
+            Icon: Clock,
+          }
         : status === "running"
-          ? { title: "AI Analysis In Progress", message: "Reviewing policy information and generating recommendations.", tone: "info" as const, Icon: Bot }
+          ? {
+              title: "AI Analysis In Progress",
+              message:
+                "Reviewing policy information and generating recommendations.",
+              tone: "info" as const,
+              Icon: Bot,
+            }
           : status === "completed"
-            ? { title: "Analysis Complete", message: "Latest analysis version ready.", tone: "success" as const, Icon: CheckCircle2 }
+            ? {
+                title: "Analysis Complete",
+                message: "Latest analysis version ready.",
+                tone: "success" as const,
+                Icon: CheckCircle2,
+              }
             : status === "failed"
-              ? { title: "Analysis Failed", message: "Please review logs and retry.", tone: "error" as const, Icon: AlertTriangle }
-              : { title: "No active analysis", message: "Run analysis when this case is ready for AI review.", tone: "info" as const, Icon: Sparkles };
+              ? {
+                  title: "Analysis Failed",
+                  message: "Please review logs and retry.",
+                  tone: "error" as const,
+                  Icon: AlertTriangle,
+                }
+              : {
+                  title: "No active analysis",
+                  message:
+                    "Run analysis when this case is ready for AI review.",
+                  tone: "info" as const,
+                  Icon: Sparkles,
+                };
   const Icon = state.Icon;
 
   return (
@@ -259,13 +363,21 @@ function AnalysisBanner({ status, duplicate, insufficientCredits }: { status: st
 }
 
 function ThinkingCard({ status }: { status: string }) {
-  const messages = status === "queued" ? queuedMessages : status === "running" ? runningMessages : [];
+  const messages =
+    status === "queued"
+      ? queuedMessages
+      : status === "running"
+        ? runningMessages
+        : [];
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     setIndex(0);
     if (!messages.length) return undefined;
-    const interval = window.setInterval(() => setIndex((current) => (current + 1) % messages.length), 4000);
+    const interval = window.setInterval(
+      () => setIndex((current) => (current + 1) % messages.length),
+      4000,
+    );
     return () => window.clearInterval(interval);
   }, [messages.length, status]);
 
@@ -279,7 +391,9 @@ function ThinkingCard({ status }: { status: string }) {
             <Bot className="h-5 w-5 animate-pulse" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-ink-950">AI analysis in progress</p>
+            <p className="text-sm font-semibold text-ink-950">
+              AI analysis in progress
+            </p>
             <p className="mt-1 text-sm text-ink-600">
               {messages[index]}
               <span className="inline-block w-6 animate-pulse">...</span>
@@ -306,92 +420,136 @@ function AnalysisVersionList({
         <CardTitle>Analysis Versions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 rounded-lg border border-ink-200 bg-ink-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Analysis Credits</p>
-          <p className="mt-2 text-2xl font-semibold text-ink-950">Backend managed</p>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-            <div className="h-full w-2/3 rounded-full bg-ink-950" />
-          </div>
-        </div>
-
         {versions.length ? (
-          <div className="space-y-3">
+          <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
             {versions.map((version) => {
-              const selected = selectedVersion?.analysisId === version.analysisId;
+              const selected =
+                selectedVersion?.analysisId === version.analysisId;
               return (
                 <button
                   type="button"
                   key={version.analysisId}
                   onClick={() => setSelectedVersionId(version.analysisId)}
                   className={[
-                    "w-full rounded-lg border p-4 text-left transition hover:border-ink-500",
-                    selected ? "border-ink-950 bg-white shadow-soft" : "border-ink-200 bg-white",
+                    "w-full min-w-0 rounded-lg border p-4 text-left transition hover:border-ink-500",
+                    selected
+                      ? "border-ink-950 bg-white shadow-soft"
+                      : "border-ink-200 bg-white",
                   ].join(" ")}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-ink-950">Version {version.versionNumber}</p>
-                      {version.isCurrent ? <Badge tone="solid">Current</Badge> : null}
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="font-semibold text-ink-950">
+                        Version {version.versionNumber}
+                      </p>
+                      {version.isCurrent ? (
+                        <Badge tone="solid">Current</Badge>
+                      ) : null}
                     </div>
-                    <Badge tone={isCompleted(version) ? "outline" : "muted"}>{formatStatus(version.status)}</Badge>
+                    <Badge tone={isCompleted(version) ? "outline" : "muted"}>
+                      {formatStatus(version.status)}
+                    </Badge>
                   </div>
-                  <div className="mt-3 grid gap-1 text-xs text-ink-500">
+                  <div className="mt-3 grid min-w-0 gap-1 text-xs text-ink-500">
                     <span>Created: {formatDate(version.createdAt)}</span>
                     <span>Confidence: {score(version.confidenceScore)}</span>
-                    <span>Satisfaction: {score(version.satisfactionScore, 5)}</span>
+                    <span>
+                      Satisfaction: {score(version.satisfactionScore, 5)}
+                    </span>
+                    <span className="break-all">ID: {version.analysisId}</span>
                   </div>
                 </button>
               );
             })}
           </div>
         ) : (
-          <p className="text-sm text-ink-600">No AI analysis has been generated for this case yet.</p>
+          <p className="text-sm text-ink-600">
+            No AI analysis has been generated for this case yet.
+          </p>
         )}
       </CardContent>
     </Card>
   );
 }
 
-function SelectedAnalysis({ version, current }: { version: AnalysisVersion | null; current: AnalysisVersion | null }) {
+function SelectedAnalysis({
+  version,
+  current,
+}: {
+  version: AnalysisVersion | null;
+  current: AnalysisVersion | null;
+}) {
   if (!version) {
     return (
       <Card className="rounded-xl">
         <CardContent>
-          <p className="text-sm text-ink-600">No AI analysis has been generated for this case yet.</p>
+          <p className="text-sm text-ink-600">
+            No AI analysis has been generated for this case yet.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const summary = firstAnalysisValue(version.analysis, ["executiveSummary", "summary", "analysisSummary", "overview"]);
-  const recommendations = asList(firstAnalysisValue(version.analysis, ["recommendations", "recommendedActions"]));
-  const missingInformation = asList(version.missingInformation ?? firstAnalysisValue(version.analysis, ["missingInformation", "missing_info"]));
-  const documentWarnings = asList(version.documentWarnings ?? firstAnalysisValue(version.analysis, ["documentWarnings", "warnings"]));
-  const clientDetails = firstAnalysisValue(version.analysis, ["clientDetails", "client", "claimant", "insured"]);
+  const summary = firstAnalysisValue(version.analysis, [
+    "executiveSummary",
+    "summary",
+    "analysisSummary",
+    "overview",
+  ]);
+  const recommendations = asList(
+    firstAnalysisValue(version.analysis, [
+      "recommendations",
+      "recommendedActions",
+    ]),
+  );
+  const missingInformation = asList(
+    version.missingInformation ??
+      firstAnalysisValue(version.analysis, [
+        "missingInformation",
+        "missing_info",
+      ]),
+  );
+  const documentWarnings = asList(
+    version.documentWarnings ??
+      firstAnalysisValue(version.analysis, ["documentWarnings", "warnings"]),
+  );
+  const clientDetails = firstAnalysisValue(version.analysis, [
+    "clientDetails",
+    "client",
+    "claimant",
+    "insured",
+  ]);
   const viewingOld = current && current.analysisId !== version.analysisId;
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       {viewingOld ? (
         <Alert tone="info">
-          Viewing Version {version.versionNumber}. Current Version: {current.versionNumber}.
+          Viewing Version {version.versionNumber}. Current Version:{" "}
+          {current.versionNumber}.
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard label="Confidence" value={score(version.confidenceScore)} />
-        <MetricCard label="Satisfaction" value={score(version.satisfactionScore, 5)} />
+        <MetricCard
+          label="Satisfaction"
+          value={score(version.satisfactionScore, 5)}
+        />
         <MetricCard label="Version" value={`v${version.versionNumber}`} />
-        <MetricCard label="AI Model" value={version.model || "Not provided"} />
-        <MetricCard label="Schema" value={[version.schemaKey, version.schemaVersion].filter(Boolean).join(" / ") || "Not provided"} />
       </div>
 
       <Card className="rounded-xl">
         <CardHeader>
           <CardTitle>Executive Summary</CardTitle>
         </CardHeader>
-        <CardContent className="text-base leading-7 text-ink-800">
-          {summary ? <JsonValue value={summary} /> : "No executive summary was returned for this version."}
+        <CardContent className="min-w-0 break-words text-base leading-7 text-ink-800">
+          {summary ? (
+            <JsonValue value={summary} />
+          ) : (
+            "No executive summary was returned for this version."
+          )}
         </CardContent>
       </Card>
 
@@ -399,33 +557,43 @@ function SelectedAnalysis({ version, current }: { version: AnalysisVersion | nul
         <CardHeader>
           <CardTitle>CloudInsure Recommendations</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
+        <CardContent className="grid min-w-0 gap-3 md:grid-cols-2">
           {recommendations.length ? (
             recommendations.map((item, index) => (
-              <div key={index} className="rounded-lg border border-ink-200 bg-ink-50 p-4 text-sm text-ink-800">
+              <div
+                key={index}
+                className="min-w-0 rounded-lg border border-ink-200 bg-ink-50 p-4 text-sm text-ink-800"
+              >
                 <JsonValue value={item} />
               </div>
             ))
           ) : (
-            <p className="text-sm text-ink-600">No recommendations were returned for this version.</p>
+            <p className="text-sm text-ink-600">
+              No recommendations were returned for this version.
+            </p>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-2">
         <Card className="rounded-xl">
           <CardHeader>
             <CardTitle>Missing Information</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+          <CardContent className="flex min-w-0 flex-wrap gap-2">
             {missingInformation.length ? (
               missingInformation.map((item, index) => (
-                <span key={index} className="rounded-full border border-dashed border-ink-400 px-3 py-1.5 text-sm text-ink-800">
+                <span
+                  key={index}
+                  className="min-w-0 break-words rounded-full border border-dashed border-ink-400 px-3 py-1.5 text-sm text-ink-800"
+                >
                   {String(item)}
                 </span>
               ))
             ) : (
-              <p className="text-sm text-ink-600">No missing information detected.</p>
+              <p className="text-sm text-ink-600">
+                No missing information detected.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -437,13 +605,21 @@ function SelectedAnalysis({ version, current }: { version: AnalysisVersion | nul
           <CardContent className="space-y-2">
             {documentWarnings.length ? (
               documentWarnings.map((item, index) => (
-                <div key={index} className="flex gap-2 rounded-lg border border-ink-200 p-3 text-sm text-ink-800">
-                  <FileWarning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{String(item)}</span>
+                <div
+                  key={index}
+                  className="flex min-w-0 gap-2 rounded-lg border border-ink-200 p-3 text-sm text-ink-800"
+                >
+                  <FileWarning
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 break-words">{String(item)}</span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-ink-600">No document warnings detected.</p>
+              <p className="text-sm text-ink-600">
+                No document warnings detected.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -453,49 +629,82 @@ function SelectedAnalysis({ version, current }: { version: AnalysisVersion | nul
         <CardHeader>
           <CardTitle>Client Details</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <JsonValue value={clientDetails ?? "No client details returned."} />
         </CardContent>
       </Card>
 
       <details className="rounded-xl border border-ink-200 bg-white p-5 shadow-soft">
-        <summary className="cursor-pointer text-base font-semibold text-ink-950">Version Metadata</summary>
-        <dl className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <DetailRow label="Analysis ID" value={version.analysisId} />
-          <DetailRow label="Job ID" value={version.analysisJobId} />
-          <DetailRow label="Input Hash" value={version.inputHash} />
+        <summary className="cursor-pointer text-base font-semibold text-ink-950">
+          Collapsed metadata
+        </summary>
+        <dl className="mt-5 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <DetailRow label="AI Model" value={version.model} />
+          <DetailRow
+            label="Schema"
+            value={[version.schemaKey, version.schemaVersion]
+              .filter(Boolean)
+              .join(" / ")}
+          />
+          <DetailRow label="Analysis ID" value={version.analysisId} breakAll />
+          <DetailRow label="Job ID" value={version.analysisJobId} breakAll />
+          <DetailRow label="Input Hash" value={version.inputHash} breakAll />
           <DetailRow label="Status" value={formatStatus(version.status)} />
-          <DetailRow label="Created Date" value={formatDate(version.createdAt)} />
-          <DetailRow label="Completed Date" value={formatDate(version.completedAt)} />
+          <DetailRow
+            label="Created Date"
+            value={formatDate(version.createdAt)}
+          />
+          <DetailRow
+            label="Completed Date"
+            value={formatDate(version.completedAt)}
+          />
         </dl>
-        <div className="mt-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Token Usage</p>
-          <JsonValue value={version.tokenUsage} />
+        <div className="mt-5 min-w-0">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
+            Token Usage
+          </p>
+          <div className="max-h-64 overflow-auto rounded-lg border border-ink-200 bg-ink-50 p-3">
+            <JsonValue value={version.tokenUsage} />
+          </div>
         </div>
       </details>
 
-      <Card className="rounded-xl">
-        <CardHeader>
-          <CardTitle>Structured Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <details className="rounded-xl border border-ink-200 bg-white p-5 shadow-soft">
+        <summary className="cursor-pointer text-base font-semibold text-ink-950">
+          Raw structured analysis
+        </summary>
+        <div className="mt-5 max-h-96 min-w-0 overflow-auto rounded-lg border border-ink-200 bg-ink-50 p-4 text-sm">
           <JsonValue value={version.analysis} />
-        </CardContent>
-      </Card>
+        </div>
+      </details>
     </div>
   );
 }
 
 function LogsTimeline({ logs }: { logs: unknown[] }) {
-  if (!logs.length) return <p className="text-sm text-ink-600">No analysis logs are available for this case.</p>;
+  if (!logs.length)
+    return (
+      <p className="text-sm text-ink-600">
+        No analysis logs are available for this case.
+      </p>
+    );
 
   return (
-    <div className="relative space-y-4 before:absolute before:left-4 before:top-2 before:h-full before:w-px before:bg-ink-200">
+    <div className="relative max-h-[32rem] min-w-0 space-y-4 overflow-y-auto pr-1 before:absolute before:left-4 before:top-2 before:h-full before:w-px before:bg-ink-200">
       {logs.map((entry, index) => {
-        const event = isRecord(entry) ? toDisplayValue(entry.event || entry.title || entry.action) || "Analysis activity" : "Analysis activity";
-        const message = isRecord(entry) ? toDisplayValue(entry.message || entry.description) : "";
-        const status = isRecord(entry) ? toDisplayValue(entry.status || entry.jobStatus || entry.level) : "";
-        const timestamp = isRecord(entry) ? entry.at ?? entry.createdAt ?? entry.timestamp : null;
+        const event = isRecord(entry)
+          ? toDisplayValue(entry.event || entry.title || entry.action) ||
+            "Analysis activity"
+          : "Analysis activity";
+        const message = isRecord(entry)
+          ? toDisplayValue(entry.message || entry.description)
+          : "";
+        const status = isRecord(entry)
+          ? toDisplayValue(entry.status || entry.jobStatus || entry.level)
+          : "";
+        const timestamp = isRecord(entry)
+          ? (entry.at ?? entry.createdAt ?? entry.timestamp)
+          : null;
         return (
           <div key={index} className="relative flex gap-4">
             <div className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-ink-200 bg-white">
@@ -503,11 +712,23 @@ function LogsTimeline({ logs }: { logs: unknown[] }) {
             </div>
             <div className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold text-ink-950">{event}</p>
-                <p className="text-xs text-ink-500">{formatDate(typeof timestamp === "string" ? timestamp : null)}</p>
+                <p className="min-w-0 break-words font-semibold text-ink-950">
+                  {event}
+                </p>
+                <p className="text-xs text-ink-500">
+                  {formatDate(typeof timestamp === "string" ? timestamp : null)}
+                </p>
               </div>
-              {message ? <p className="mt-1 text-sm text-ink-600">{message}</p> : null}
-              {status ? <div className="mt-3"><Badge tone="muted">{formatStatus(status)}</Badge></div> : null}
+              {message ? (
+                <p className="mt-1 break-words text-sm text-ink-600">
+                  {message}
+                </p>
+              ) : null}
+              {status ? (
+                <div className="mt-3">
+                  <Badge tone="muted">{formatStatus(status)}</Badge>
+                </div>
+              ) : null}
             </div>
           </div>
         );
@@ -519,7 +740,8 @@ function LogsTimeline({ logs }: { logs: unknown[] }) {
 export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [selectedVersionId, setSelectedVersionId] = useState("");
-  const [selectedDownloadVersionId, setSelectedDownloadVersionId] = useState("");
+  const [selectedDownloadVersionId, setSelectedDownloadVersionId] =
+    useState("");
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [pollingEnabled, setPollingEnabled] = useState(false);
@@ -530,11 +752,34 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   const files = getFiles(caseItem);
   const caseId = readDisplay(caseItem, ["caseId", "CaseId", "id", "_id"]);
-  const caseReferenceNumber = readDisplay(caseItem, ["caseReferenceNumber", "referenceNumber", "caseReference"]) || caseId;
-  const caseType = readDisplay(caseItem, ["caseType", "type", "caseTypeName"]) || "Personal Policy Analysis";
-  const submittedDate = readDisplay(caseItem, ["submittedDate", "createdAt", "createdDate"]);
-  const lastUpdatedDate = readDisplay(caseItem, ["lastUpdatedDate", "updatedAt", "updatedDate", "lastUpdated"]);
-  const filesAttachedCount = toFilesCount(readCaseField(caseItem, ["filesAttachedCount", "filesCount", "documentsCount"]), files.length);
+  const caseReferenceNumber =
+    readDisplay(caseItem, [
+      "caseReferenceNumber",
+      "referenceNumber",
+      "caseReference",
+    ]) || caseId;
+  const caseType =
+    readDisplay(caseItem, ["caseType", "type", "caseTypeName"]) ||
+    "Personal Policy Analysis";
+  const submittedDate = readDisplay(caseItem, [
+    "submittedDate",
+    "createdAt",
+    "createdDate",
+  ]);
+  const lastUpdatedDate = readDisplay(caseItem, [
+    "lastUpdatedDate",
+    "updatedAt",
+    "updatedDate",
+    "lastUpdated",
+  ]);
+  const filesAttachedCount = toFilesCount(
+    readCaseField(caseItem, [
+      "filesAttachedCount",
+      "filesCount",
+      "documentsCount",
+    ]),
+    files.length,
+  );
 
   const statusQuery = useQuery({
     queryKey: ["case-analysis-status", caseId],
@@ -553,14 +798,30 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     enabled: Boolean(caseId),
   });
 
-  const versions = useMemo(() => versionsQuery.data ?? [], [versionsQuery.data]);
+  const versions = useMemo(
+    () => versionsQuery.data ?? [],
+    [versionsQuery.data],
+  );
   const current = useMemo(() => currentVersion(versions), [versions]);
-  const defaultDownload = useMemo(() => defaultDownloadVersion(versions), [versions]);
-  const selectedVersion = versions.find((version) => version.analysisId === selectedVersionId) ?? current;
-  const selectedDownloadVersion = versions.find((version) => version.analysisId === selectedDownloadVersionId) ?? null;
+  const defaultDownload = useMemo(
+    () => defaultDownloadVersion(versions),
+    [versions],
+  );
+  const selectedVersion =
+    versions.find((version) => version.analysisId === selectedVersionId) ??
+    current;
+  const selectedDownloadVersion =
+    versions.find(
+      (version) => version.analysisId === selectedDownloadVersionId,
+    ) ?? null;
   const analysisStatus = statusFromPayload(statusQuery.data);
   const running = activeAnalysisStatuses.has(analysisStatus) || pollingEnabled;
-  const logs = arrayFromPayload(logsQuery.data, ["timeline", "logs", "items", "history"]);
+  const logs = arrayFromPayload(logsQuery.data, [
+    "timeline",
+    "logs",
+    "items",
+    "history",
+  ]);
 
   useEffect(() => {
     if (!selectedVersionId && current) setSelectedVersionId(current.analysisId);
@@ -593,16 +854,29 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       setDuplicateReused(duplicate);
       if (returnedAnalysisId) setSelectedVersionId(returnedAnalysisId);
       if (result.status === 202) setPollingEnabled(true);
-      await Promise.all([statusQuery.refetch(), versionsQuery.refetch(), logsQuery.refetch()]);
+      await Promise.all([
+        statusQuery.refetch(),
+        versionsQuery.refetch(),
+        logsQuery.refetch(),
+      ]);
     },
     onError: (error) => {
-      const message = error instanceof ApiError ? error.message : "Unable to run analysis.";
-      setInsufficientCredits(message.toLowerCase().includes("analysis limit") || message.toLowerCase().includes("credit"));
+      const message =
+        error instanceof ApiError ? error.message : "Unable to run analysis.";
+      setInsufficientCredits(
+        message.toLowerCase().includes("analysis limit") ||
+          message.toLowerCase().includes("credit"),
+      );
     },
   });
 
   async function handleDownloadAnalysis() {
-    if (!caseId || !selectedDownloadVersion || !isCompleted(selectedDownloadVersion)) return;
+    if (
+      !caseId ||
+      !selectedDownloadVersion ||
+      !isCompleted(selectedDownloadVersion)
+    )
+      return;
 
     setIsDownloading(true);
     setDownloadError(null);
@@ -615,14 +889,20 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       const url = URL.createObjectURL(download.blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = download.fileName || `analysis-v${selectedDownloadVersion.versionNumber}.pdf`;
+      link.download =
+        download.fileName ||
+        `analysis-v${selectedDownloadVersion.versionNumber}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
       setIsDownloadModalOpen(false);
     } catch (error) {
-      setDownloadError(error instanceof ApiError ? error.message : "Unable to download this analysis version.");
+      setDownloadError(
+        error instanceof ApiError
+          ? error.message
+          : "Unable to download this analysis version.",
+      );
     } finally {
       setIsDownloading(false);
     }
@@ -630,55 +910,209 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-xl">
+      <Card className="overflow-hidden rounded-2xl border-ink-200 bg-white shadow-soft">
         <CardContent>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
                 <CaseStatusBadge status={getCaseStatus(caseItem)} />
-                <Badge tone={isCompleted(current ?? ({} as AnalysisVersion)) ? "outline" : "muted"}>{formatStatus(analysisStatus)}</Badge>
+                <Badge
+                  tone={
+                    isCompleted(current ?? ({} as AnalysisVersion))
+                      ? "outline"
+                      : "muted"
+                  }
+                >
+                  {formatStatus(analysisStatus)}
+                </Badge>
               </div>
-              <h2 className="text-3xl font-semibold tracking-tight text-ink-950">{getCaseTitle(caseItem)}</h2>
-              <p className="mt-2 text-sm text-ink-500">Reference #{caseReferenceNumber || "Not assigned"}</p>
-              <p className="mt-1 text-base font-medium text-ink-800">{caseType}</p>
-              <div className="mt-5 grid gap-4 text-sm text-ink-600 sm:grid-cols-3">
-                <span><strong className="text-ink-950">Created</strong><br />{formatDate(submittedDate)}</span>
-                <span><strong className="text-ink-950">Last Updated</strong><br />{formatDate(lastUpdatedDate)}</span>
-                <span><strong className="text-ink-950">Files Attached</strong><br />{filesAttachedCount}</span>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                Case Detail
+              </p>
+              <h2 className="mt-2 break-words text-3xl font-semibold tracking-tight text-ink-950 lg:text-4xl">
+                {getCaseTitle(caseItem)}
+              </h2>
+              <p className="mt-3 break-all text-sm text-ink-500">
+                Reference #{caseReferenceNumber || "Not assigned"}
+              </p>
+              <p className="mt-1 break-words text-base font-medium text-ink-800">
+                {caseType}
+              </p>
+              <div className="mt-6 grid min-w-0 gap-3 text-sm text-ink-600 sm:grid-cols-3">
+                <span className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                  <strong className="text-ink-950">Created</strong>
+                  <br />
+                  {formatDate(submittedDate)}
+                </span>
+                <span className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                  <strong className="text-ink-950">Last Updated</strong>
+                  <br />
+                  {formatDate(lastUpdatedDate)}
+                </span>
+                <span className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                  <strong className="text-ink-950">Files Attached</strong>
+                  <br />
+                  {filesAttachedCount}
+                </span>
               </div>
             </div>
+            <div className="w-full rounded-xl border border-ink-200 bg-ink-50 p-4 lg:max-w-xs">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                Selected analysis
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-ink-950">
+                {selectedVersion ? `v${selectedVersion.versionNumber}` : "None"}
+              </p>
+              <p className="mt-1 break-all text-xs text-ink-500">
+                {selectedVersion?.analysisId ||
+                  "Run analysis to create a version."}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="w-full space-y-3 lg:max-w-md">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  value={inputHash}
-                  onChange={(event) => setInputHash(event.target.value)}
-                  disabled={running || analyzeMutation.isPending}
-                  placeholder="Optional inputHash"
-                  className="min-h-10 rounded-md border border-ink-300 px-3 py-2 text-sm"
-                />
-                <input
-                  value={model}
-                  onChange={(event) => setModel(event.target.value)}
-                  disabled={running || analyzeMutation.isPending}
-                  placeholder="Optional model"
-                  className="min-h-10 rounded-md border border-ink-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
+      <AnalysisBanner
+        status={analysisStatus}
+        duplicate={duplicateReused}
+        insufficientCredits={insufficientCredits}
+      />
+      {analyzeMutation.isError ? (
+        <Alert tone="error">
+          {analyzeMutation.error instanceof ApiError
+            ? analyzeMutation.error.message
+            : "Unable to run analysis."}
+        </Alert>
+      ) : null}
+      <ThinkingCard status={analysisStatus} />
+
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+        <main className="min-w-0 space-y-6">
+          <SelectedAnalysis
+            version={selectedVersion ?? null}
+            current={current}
+          />
+
+          <Card className="rounded-xl">
+            <CardHeader>
+              <CardTitle>Supporting Documents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {files.length ? (
+                <div className="space-y-3">
+                  {files.map((file, index) => {
+                    const fileName = getFileName(file, index);
+                    const details = [getFileType(file), getFileSize(file)]
+                      .filter(Boolean)
+                      .join(" - ");
+                    const downloadUrl = getFileDownloadUrl(file);
+                    return (
+                      <div
+                        key={`${fileName}-${index}`}
+                        className="flex min-w-0 flex-col gap-3 rounded-lg border border-ink-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="break-all text-sm font-medium text-ink-950">
+                            {fileName}
+                          </p>
+                          <p className="mt-1 break-words text-xs text-ink-500">
+                            {details || "File details not provided"}
+                          </p>
+                        </div>
+                        {downloadUrl ? (
+                          <a
+                            href={getDownloadHref(downloadUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            download={fileName}
+                            className="inline-flex shrink-0 items-center justify-center rounded-md border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+                          >
+                            Download
+                          </a>
+                        ) : (
+                          <span className="shrink-0 text-xs text-ink-500">
+                            Download unavailable
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-ink-600">
+                  No supporting documents were attached to this case.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card id="analysis-logs" className="rounded-xl">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle>Analysis Activity</CardTitle>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void logsQuery.refetch()}
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Refresh
+              </Button>
+            </CardHeader>
+            <CardContent className="min-w-0">
+              <LogsTimeline logs={logs} />
+            </CardContent>
+          </Card>
+        </main>
+
+        <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
+          <Card className="rounded-xl">
+            <CardHeader>
+              <CardTitle>Analysis Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                type="button"
+                onClick={() => analyzeMutation.mutate()}
+                isLoading={analyzeMutation.isPending || running}
+                disabled={!caseId || running || insufficientCredits}
+                className="w-full"
+              >
+                {!analyzeMutation.isPending && !running ? (
+                  <Play className="h-4 w-4" aria-hidden="true" />
+                ) : null}
+                {running ? "Analyzing..." : "Run Analysis"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsDownloadModalOpen(true)}
+                disabled={!defaultDownload}
+                className="w-full"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Download Report
+              </Button>
+              {selectedVersion && isCompleted(selectedVersion) ? (
+                <Button asChild variant="secondary" className="w-full">
+                  <Link
+                    to={`/reports/designer?caseId=${caseId}&analysisId=${selectedVersion.analysisId}`}
+                  >
+                    <ScrollText className="h-4 w-4" aria-hidden="true" />
+                    Design Report
+                  </Link>
+                </Button>
+              ) : (
                 <Button
-                  type="button"
-                  onClick={() => analyzeMutation.mutate()}
-                  isLoading={analyzeMutation.isPending || running}
-                  disabled={!caseId || running || insufficientCredits}
+                  variant="secondary"
+                  disabled
+                  title="Only completed analyses can be used for report design."
+                  className="w-full"
                 >
-                  {!analyzeMutation.isPending && !running ? <Play className="h-4 w-4" aria-hidden="true" /> : null}
-                  {running ? "Analyzing..." : "Run Analysis"}
+                  <ScrollText className="h-4 w-4" aria-hidden="true" />
+                  Design Report
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setIsDownloadModalOpen(true)} disabled={!defaultDownload}>
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                  Download Report
-                </Button>
+              )}
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                 <Button
                   type="button"
                   variant="secondary"
@@ -691,133 +1125,178 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                   <RefreshCw className="h-4 w-4" aria-hidden="true" />
                   Refresh
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => document.getElementById("analysis-logs")?.scrollIntoView({ behavior: "smooth" })}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() =>
+                    document
+                      .getElementById("analysis-logs")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
                   <ScrollText className="h-4 w-4" aria-hidden="true" />
                   View Logs
                 </Button>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <details className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-ink-950">
+                  Advanced analysis options
+                </summary>
+                <div className="mt-3 grid gap-2">
+                  <input
+                    value={inputHash}
+                    onChange={(event) => setInputHash(event.target.value)}
+                    disabled={running || analyzeMutation.isPending}
+                    placeholder="Optional inputHash"
+                    className="min-h-10 min-w-0 rounded-md border border-ink-300 px-3 py-2 text-sm"
+                  />
+                  <input
+                    value={model}
+                    onChange={(event) => setModel(event.target.value)}
+                    disabled={running || analyzeMutation.isPending}
+                    placeholder="Optional model"
+                    className="min-h-10 min-w-0 rounded-md border border-ink-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </details>
+            </CardContent>
+          </Card>
 
-      <AnalysisBanner status={analysisStatus} duplicate={duplicateReused} insufficientCredits={insufficientCredits} />
-      {analyzeMutation.isError ? <Alert tone="error">{analyzeMutation.error instanceof ApiError ? analyzeMutation.error.message : "Unable to run analysis."}</Alert> : null}
-      <ThinkingCard status={analysisStatus} />
+          <AnalysisVersionList
+            versions={versions}
+            selectedVersion={selectedVersion ?? null}
+            setSelectedVersionId={setSelectedVersionId}
+          />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(320px,40%)_minmax(0,60%)]">
-        <AnalysisVersionList versions={versions} selectedVersion={selectedVersion ?? null} setSelectedVersionId={setSelectedVersionId} />
-        <SelectedAnalysis version={selectedVersion ?? null} current={current} />
+          <Card className="rounded-xl">
+            <CardHeader>
+              <CardTitle>Case Metadata</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid min-w-0 gap-4">
+                <DetailRow label="Case ID" value={caseId} breakAll />
+                <DetailRow
+                  label="Reference"
+                  value={caseReferenceNumber || "Not assigned"}
+                  breakAll
+                />
+                <DetailRow label="Case Type" value={caseType} />
+                <DetailRow label="Files Attached" value={filesAttachedCount} />
+              </dl>
+            </CardContent>
+          </Card>
+        </aside>
       </div>
-
-      <Card className="rounded-xl">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Analysis Reports</CardTitle>
-          <Button type="button" variant="secondary" onClick={() => setIsDownloadModalOpen(true)} disabled={!defaultDownload}>
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Download Report
-          </Button>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          {defaultDownload ? (
-            <div className="rounded-lg border border-ink-200 p-4">
-              <p className="font-semibold text-ink-950">Latest Version Report</p>
-              <p className="mt-1 text-sm text-ink-600">Version {defaultDownload.versionNumber} - {score(defaultDownload.satisfactionScore, 5)} Satisfaction</p>
-            </div>
-          ) : (
-            <p className="text-sm text-ink-600">No completed analysis version is available yet.</p>
-          )}
-          {versions.filter((version) => version.analysisId !== defaultDownload?.analysisId).map((version) => (
-            <div className="rounded-lg border border-ink-200 p-4" key={version.analysisId}>
-              <p className="font-semibold text-ink-950">Version {version.versionNumber}</p>
-              <p className="mt-1 text-sm text-ink-600">{formatStatus(version.status)} - {formatDate(version.createdAt)}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-xl">
-        <CardHeader>
-          <CardTitle>Supporting Documents</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {files.length ? (
-            <div className="space-y-3">
-              {files.map((file, index) => {
-                const fileName = getFileName(file, index);
-                const details = [getFileType(file), getFileSize(file)].filter(Boolean).join(" - ");
-                const downloadUrl = getFileDownloadUrl(file);
-                return (
-                  <div key={`${fileName}-${index}`} className="flex flex-col gap-3 rounded-lg border border-ink-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-ink-950">{fileName}</p>
-                      <p className="mt-1 text-xs text-ink-500">{details || "File details not provided"}</p>
-                    </div>
-                    {downloadUrl ? (
-                      <a href={getDownloadHref(downloadUrl)} target="_blank" rel="noreferrer" download={fileName} className="inline-flex items-center justify-center rounded-md border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50">
-                        Download
-                      </a>
-                    ) : (
-                      <span className="text-xs text-ink-500">Download unavailable</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-ink-600">No supporting documents were attached to this case.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card id="analysis-logs" className="rounded-xl">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Analysis Activity</CardTitle>
-          <Button type="button" variant="secondary" onClick={() => void logsQuery.refetch()}>
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Refresh
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <LogsTimeline logs={logs} />
-        </CardContent>
-      </Card>
 
       {isDownloadModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/45 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="analysis-download-title" className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg border border-ink-200 bg-white shadow-xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="analysis-download-title"
+            className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg border border-ink-200 bg-white shadow-xl"
+          >
             <div className="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4">
-              <div>
-                <h2 id="analysis-download-title" className="text-base font-semibold text-ink-950">Download Analysis Version</h2>
-                {selectedDownloadVersion ? <p className="mt-1 text-sm text-ink-600">Selected version {selectedDownloadVersion.versionNumber} ({selectedDownloadVersion.analysisId})</p> : null}
+              <div className="min-w-0">
+                <h2
+                  id="analysis-download-title"
+                  className="text-base font-semibold text-ink-950"
+                >
+                  Download Analysis Version
+                </h2>
+                {selectedDownloadVersion ? (
+                  <p className="mt-1 break-all text-sm text-ink-600">
+                    Selected version {selectedDownloadVersion.versionNumber} (
+                    {selectedDownloadVersion.analysisId})
+                  </p>
+                ) : null}
               </div>
-              <Button type="button" variant="ghost" onClick={() => setIsDownloadModalOpen(false)} className="min-h-9 px-3">Close</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="min-h-9 px-3"
+              >
+                Close
+              </Button>
             </div>
 
             <div className="max-h-[calc(90vh-9rem)] overflow-y-auto px-5 py-5">
-              {!defaultDownload ? <Alert tone="info">No completed analysis version is available to download.</Alert> : null}
-              <div className="mt-4 space-y-3">
+              {!defaultDownload ? (
+                <Alert tone="info">
+                  No completed analysis version is available to download.
+                </Alert>
+              ) : null}
+              <div className="mt-4 max-h-[48vh] space-y-3 overflow-y-auto pr-1">
                 {versions.map((version) => {
                   const completed = isCompleted(version);
-                  const selected = selectedDownloadVersion?.analysisId === version.analysisId;
+                  const selected =
+                    selectedDownloadVersion?.analysisId === version.analysisId;
                   return (
-                    <label key={version.analysisId} className={[selected ? "border-ink-950 shadow-sm" : "border-ink-200", completed ? "cursor-pointer" : "cursor-not-allowed bg-ink-50 opacity-75", "block rounded-lg border p-4 transition"].join(" ")}>
+                    <label
+                      key={version.analysisId}
+                      className={[
+                        selected
+                          ? "border-ink-950 shadow-sm"
+                          : "border-ink-200",
+                        completed
+                          ? "cursor-pointer"
+                          : "cursor-not-allowed bg-ink-50 opacity-75",
+                        "block rounded-lg border p-4 transition",
+                      ].join(" ")}
+                    >
                       <div className="flex items-start gap-3">
-                        <input type="radio" name="analysis-version" value={version.analysisId} checked={selected} disabled={!completed} onChange={() => setSelectedDownloadVersionId(version.analysisId)} className="mt-1 h-4 w-4 accent-ink-950" />
+                        <input
+                          type="radio"
+                          name="analysis-version"
+                          value={version.analysisId}
+                          checked={selected}
+                          disabled={!completed}
+                          onChange={() =>
+                            setSelectedDownloadVersionId(version.analysisId)
+                          }
+                          className="mt-1 h-4 w-4 accent-ink-950"
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-ink-950">Version {version.versionNumber}</p>
-                            {version.isCurrent ? <Badge tone="solid">Current</Badge> : null}
-                            <Badge tone={completed ? "outline" : "muted"}>{formatStatus(version.status)}</Badge>
+                            <p className="text-sm font-semibold text-ink-950">
+                              Version {version.versionNumber}
+                            </p>
+                            {version.isCurrent ? (
+                              <Badge tone="solid">Current</Badge>
+                            ) : null}
+                            <Badge tone={completed ? "outline" : "muted"}>
+                              {formatStatus(version.status)}
+                            </Badge>
                           </div>
-                          {!completed ? <p className="mt-2 text-sm text-ink-600">Analysis not completed yet.</p> : null}
+                          {!completed ? (
+                            <p className="mt-2 text-sm text-ink-600">
+                              Analysis not completed yet.
+                            </p>
+                          ) : null}
                           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                            <DetailRow label="Created date" value={formatDate(version.createdAt)} />
-                            <DetailRow label="Completed date" value={formatDate(version.completedAt)} />
-                            <DetailRow label="Confidence score" value={score(version.confidenceScore)} />
-                            <DetailRow label="Satisfaction score" value={score(version.satisfactionScore, 5)} />
+                            <DetailRow
+                              label="Created date"
+                              value={formatDate(version.createdAt)}
+                            />
+                            <DetailRow
+                              label="Completed date"
+                              value={formatDate(version.completedAt)}
+                            />
+                            <DetailRow
+                              label="Confidence score"
+                              value={score(version.confidenceScore)}
+                            />
+                            <DetailRow
+                              label="Satisfaction score"
+                              value={score(version.satisfactionScore, 5)}
+                            />
                             <DetailRow label="Model" value={version.model} />
-                            <DetailRow label="Analysis ID" value={version.analysisId} />
+                            <DetailRow
+                              label="Analysis ID"
+                              value={version.analysisId}
+                              breakAll
+                            />
                           </dl>
                         </div>
                       </div>
@@ -825,12 +1304,30 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                   );
                 })}
               </div>
-              {downloadError ? <Alert tone="error" className="mt-4">{downloadError}</Alert> : null}
+              {downloadError ? (
+                <Alert tone="error" className="mt-4">
+                  {downloadError}
+                </Alert>
+              ) : null}
             </div>
 
             <div className="flex flex-col-reverse gap-3 border-t border-ink-200 px-5 py-4 sm:flex-row sm:justify-end">
-              <Button type="button" variant="secondary" onClick={() => setIsDownloadModalOpen(false)}>Cancel</Button>
-              <Button type="button" onClick={() => void handleDownloadAnalysis()} isLoading={isDownloading} disabled={!selectedDownloadVersion || !isCompleted(selectedDownloadVersion)}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsDownloadModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handleDownloadAnalysis()}
+                isLoading={isDownloading}
+                disabled={
+                  !selectedDownloadVersion ||
+                  !isCompleted(selectedDownloadVersion)
+                }
+              >
                 <Download className="h-4 w-4" aria-hidden="true" />
                 Download Selected Version
               </Button>

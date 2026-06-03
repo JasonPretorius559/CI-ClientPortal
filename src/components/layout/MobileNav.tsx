@@ -7,6 +7,8 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "My Cases", to: "/cases" },
   { label: "New Case", to: "/cases/new" },
+  { label: "Report Templates", to: "/reports/templates" },
+  { label: "Report Designer", to: "/reports/designer" },
   { label: "Profile", to: "/profile" },
   { label: "Settings", to: "/settings" },
 ];

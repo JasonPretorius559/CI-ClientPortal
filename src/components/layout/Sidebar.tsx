@@ -1,11 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { Briefcase, FilePlus2, Home, Settings, UserRound } from "lucide-react";
+import { Briefcase, FilePlus2, Home, Settings, UserRound, Files, PenTool } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: Home },
   { label: "My Cases", to: "/cases", icon: Briefcase },
   { label: "New Case", to: "/cases/new", icon: FilePlus2 },
+  { label: "Report Templates", to: "/reports/templates", icon: Files },
+  { label: "Report Designer", to: "/reports/designer", icon: PenTool },
   { label: "Profile", to: "/profile", icon: UserRound },
   { label: "Settings", to: "/settings", icon: Settings },
 ];

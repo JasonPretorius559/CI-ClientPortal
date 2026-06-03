@@ -14,6 +14,8 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { SetPasswordPage } from "../pages/SetPasswordPage";
 import { SettingsPage } from "../pages/SettingsPage";
+import { ReportDesignerPage } from "../features/reports/ReportDesignerPage";
+import { ReportTemplatesPage } from "../features/reports/ReportTemplatesPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 
@@ -49,6 +51,10 @@ export function AppRouter() {
           <Route path="/cases" element={<CasesPage />} />
           <Route path="/cases/new" element={<NewCasePage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
+          <Route path="/cases/:id/report-designer" element={<ReportDesignerPage />} />
+          <Route path="/reports/templates" element={<ReportTemplatesPage />} />
+          <Route path="/reports/designer" element={<ReportDesignerPage />} />
+          <Route path="/reports/designer/:templateId" element={<ReportDesignerPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
