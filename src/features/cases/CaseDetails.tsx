@@ -34,7 +34,7 @@ import {
 import {
   getReportDesignId,
   getReportDesignTemplate,
-  getSchemaMismatchMessage,
+  getReportDesignRunErrorMessage,
 } from "../report-designs/reportDesigns.utils";
 import type { ReportDesign } from "../report-designs/reportDesigns.types";
 import { useReportDesignerStore } from "../reports/reportDesigner.store";
@@ -959,7 +959,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       showToast({ tone: "success", title: "Report design preview loaded." });
     },
     onError: (error) => {
-      const message = getSchemaMismatchMessage(error);
+      const message = getReportDesignRunErrorMessage(error);
       setReportDesignRunError(message);
       showToast({ tone: "error", title: message });
     },
@@ -985,14 +985,14 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
           setReportDesignerTemplate(getReportDesignTemplate(selectedReportDesign));
           setReportDesignPreviewTitle(reportDesignDisplayName(selectedReportDesign));
         }
-        setReportDesignPreviewPayload(result.payload);
+        setReportDesignPreviewPayload(result.kind === "html" ? result : result.payload);
         setReportDesignPreviewOpen(true);
       }
       setIsReportDesignModalOpen(false);
       showToast({ tone: "success", title: "Report generated." });
     },
     onError: (error) => {
-      const message = getSchemaMismatchMessage(error);
+      const message = getReportDesignRunErrorMessage(error);
       setReportDesignRunError(message);
       showToast({ tone: "error", title: message });
     },

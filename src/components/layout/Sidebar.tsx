@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Briefcase, FilePlus2, Home, Settings, UserRound, LibraryBig } from "lucide-react";
+import { Briefcase, FilePlus2, Home, Settings, UserRound, LibraryBig, Settings2 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { useAuth } from "../../features/auth/useAuth";
 import { isAdminUser } from "../../features/auth/auth.utils";
@@ -8,7 +8,8 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: Home },
   { label: "My Cases", to: "/cases", icon: Briefcase },
   { label: "New Case", to: "/cases/new", icon: FilePlus2 },
-  { label: "Report Designer", to: "/admin/report-designs/new", icon: LibraryBig, adminOnly: true },
+  { label: "Admin Setup", to: "/admin/setup", icon: Settings2, adminOnly: true },
+  { label: "Report Designs", to: "/admin/report-designs", icon: LibraryBig, adminOnly: true },
   { label: "Profile", to: "/profile", icon: UserRound },
   { label: "Settings", to: "/settings", icon: Settings },
 ];

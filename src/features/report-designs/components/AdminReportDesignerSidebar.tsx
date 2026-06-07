@@ -1,4 +1,4 @@
-import { Image, ImagePlus, Square, Type } from "lucide-react";
+import { EyeOff, Image, ImagePlus, Square, Type } from "lucide-react";
 import { useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { SelectField } from "../../../components/forms/SelectField";
@@ -187,6 +187,34 @@ export function AdminReportDesignerSidebar({
         >
           <Square className="h-4 w-4" aria-hidden="true" />
           Shape
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full justify-start"
+          onClick={() =>
+            addElement({
+              type: "conditional",
+              page: activePage,
+              x: 96,
+              y: 480,
+              width: 300,
+              height: 96,
+              zIndex: nextZIndex,
+              content: "Conditional block",
+              visibility: {
+                sourceKey: "case_analysis",
+                path: "",
+                operator: "exists",
+              },
+              components: [],
+              emptyState: "Hidden when condition is not met",
+              style: { fontSize: 12, color: template.theme.textColor, backgroundColor: "#ffffff", borderRadius: 8 },
+            })
+          }
+        >
+          <EyeOff className="h-4 w-4" aria-hidden="true" />
+          Conditional
         </Button>
 
         <div className="min-w-0">

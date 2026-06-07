@@ -21,7 +21,7 @@ import {
   DEFAULT_REPORT_DATA_SOURCE_KEY,
   getReportDesignId,
   getReportDesignTemplate,
-  getSchemaMismatchMessage,
+  getReportDesignRunErrorMessage,
 } from "../../features/report-designs/reportDesigns.utils";
 import {
   createReportDesign,
@@ -31,9 +31,10 @@ import {
   getReportDesign,
   getStructuredOutputSchemas,
   previewReportDesign,
+  renderReportDesign,
   updateReportDesign,
 } from "../../features/report-designs/reportDesigns.api";
-import type { ReportDesign, ReportDesignBinding, StructuredOutputSchemaField } from "../../features/report-designs/reportDesigns.types";
+import type { ReportDesign, ReportDesignBinding, ReportRenderFormat, StructuredOutputSchemaField } from "../../features/report-designs/reportDesigns.types";
 import { createDefaultReportTemplate } from "../../features/reports/reportTemplate.defaults";
 import { supportedReportFonts } from "../../features/reports/reportFonts";
 import { useReportDesignerStore } from "../../features/reports/reportDesigner.store";
@@ -124,7 +125,8 @@ export function ReportDesignEditorPage() {
   const [metaDirty, setMetaDirty] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPayload, setPreviewPayload] = useState<unknown>(null);
-  const [runMode, setRunMode] = useState<"preview" | "generate" | null>(null);
+  const [runMode, setRunMode] = useState<"preview" | "generate" | "render" | null>(null);
+  const [renderFormat, setRenderFormat] = useState<ReportRenderFormat>("html");
   const [caseId, setCaseId] = useState("");
   const [analysisId, setAnalysisId] = useState("");
   const [runError, setRunError] = useState<string | null>(null);
@@ -174,8 +176,8 @@ export function ReportDesignEditorPage() {
   const schemaFieldsVersion = sourceFieldsQuery.data?.schemaVersion ?? null;
   const schemaFields = sourceFieldsQuery.data?.fields ?? [];
   const fieldWarnings = sourceFieldsQuery.data?.warnings ?? [];
-  const schemas = schemasQuery.data ?? [];
-  const dataSources = dataSourcesQuery.data ?? [];
+  const schemas = useMemo(() => schemasQuery.data ?? [], [schemasQuery.data]);
+  const dataSources = useMemo(() => dataSourcesQuery.data ?? [], [dataSourcesQuery.data]);
   const selectedElement = template.coverPage.elements.find((element) => element.id === selectedElementId);
   const activeFont = selectedElement?.style.fontFamily ?? template.theme.fontFamily;
   const designerPages = useMemo(
@@ -237,6 +239,7 @@ export function ReportDesignEditorPage() {
   };
 
   const updateDesignSchema = (schemaKey: string) => {
+    if (bindings.length > 0 && !window.confirm("Changing schema will clear existing bindings. Continue?")) return;
     const schema = schemas.find((item) => item.key === schemaKey);
     const nextTemplate = createDefaultReportTemplate();
 
@@ -321,6 +324,36 @@ export function ReportDesignEditorPage() {
   };
 
   const addFieldElement = (field: StructuredOutputSchemaField) => addFieldElements([field]);
+
+  const addArrayComponent = (field: StructuredOutputSchemaField, type: "table" | "repeater") => {
+    if (!selectedSourceKey) return;
+    const nextZIndex = template.coverPage.elements.length + 1;
+    addElement({
+      type,
+      page: activePage,
+      x: 72,
+      y: 72,
+      width: type === "table" ? 520 : 360,
+      height: type === "table" ? 220 : 180,
+      zIndex: nextZIndex,
+      content: field.label,
+      sourceKey: field.sourceKey || selectedSourceKey,
+      path: field.path,
+      columns: type === "table" ? [{ id: "column-1", label: "Value", path: "" }] : undefined,
+      components: type === "repeater" ? [] : undefined,
+      emptyState: "No records found",
+      style: {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: 12,
+        fontWeight: "400",
+        color: "#18181b",
+        backgroundColor: "#ffffff",
+        borderRadius: 8,
+        opacity: 1,
+      },
+    });
+    setMetaDirty(true);
+  };
 
   const addDroppedFields = (fieldPaths: string[], position: { x: number; y: number }) => {
     const fieldsByPath = new Map(schemaFields.map((field) => [field.path, field]));
@@ -429,7 +462,7 @@ export function ReportDesignEditorPage() {
       if (warnings.length) showToast({ tone: "success", title: `Preview warnings: ${warnings.join(" ")}` });
     },
     onError: (error) => {
-      const message = getSchemaMismatchMessage(error);
+      const message = getReportDesignRunErrorMessage(error);
       setRunError(message);
       showToast({ tone: "error", title: message });
     },
@@ -441,6 +474,9 @@ export function ReportDesignEditorPage() {
     onSuccess: (result) => {
       if (result.kind === "file") {
         downloadBlob(result.blob, result.fileName);
+      } else if (result.kind === "html") {
+        setPreviewPayload(result);
+        setPreviewOpen(true);
       } else {
         const warnings = getPayloadWarnings(result.payload);
         if (warnings.length) showToast({ tone: "success", title: `Report warnings: ${warnings.join(" ")}` });
@@ -449,7 +485,27 @@ export function ReportDesignEditorPage() {
       showToast({ tone: "success", title: "Report generated." });
     },
     onError: (error) => {
-      const message = getSchemaMismatchMessage(error);
+      const message = getReportDesignRunErrorMessage(error);
+      setRunError(message);
+      showToast({ tone: "error", title: message });
+    },
+  });
+
+  const renderMutation = useMutation({
+    mutationFn: () => renderReportDesign(id ?? "", { caseId: caseId.trim(), analysisId: analysisId.trim(), format: renderFormat, mode: "preview" }),
+    onMutate: () => setRunError(null),
+    onSuccess: (result) => {
+      if (result.kind === "file") {
+        downloadBlob(result.blob, result.fileName);
+      } else {
+        setPreviewPayload(result);
+        setPreviewOpen(true);
+      }
+      setRunMode(null);
+      showToast({ tone: "success", title: "Report rendered." });
+    },
+    onError: (error) => {
+      const message = getReportDesignRunErrorMessage(error);
       setRunError(message);
       showToast({ tone: "error", title: message });
     },
@@ -480,7 +536,7 @@ export function ReportDesignEditorPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFullscreen, saveDesign]);
 
-  const runActionLabel = useMemo(() => (runMode === "preview" ? "Load Preview" : "Generate Report"), [runMode]);
+  const runActionLabel = useMemo(() => (runMode === "preview" ? "Load Preview" : runMode === "render" ? "Render Report" : "Generate Report"), [runMode]);
 
   if (isEditing && reportDesignQuery.isLoading) {
     return (
@@ -609,6 +665,10 @@ export function ReportDesignEditorPage() {
               <Download className="h-4 w-4" aria-hidden="true" />
               Generate report
             </Button>
+            <Button type="button" variant="secondary" onClick={() => setRunMode("render")} disabled={!isEditing || !id}>
+              <Eye className="h-4 w-4" aria-hidden="true" />
+              Render
+            </Button>
             <Button type="button" onClick={saveDesign} isLoading={isSavingDesign} disabled={isSavingDesign}>
               <Save className="h-4 w-4" aria-hidden="true" />
               Save
@@ -628,9 +688,15 @@ export function ReportDesignEditorPage() {
           </Alert>
         ) : null}
 
-        {draft.hasMigratedBindings ? (
+            {draft.hasMigratedBindings ? (
           <Alert tone="info" className="m-4">
             Older bindings were migrated to the {DEFAULT_REPORT_DATA_SOURCE_KEY} report data source. Save this design to persist the new binding shape.
+          </Alert>
+        ) : null}
+
+        {draft.warnings?.length ? (
+          <Alert tone="info" className="m-4">
+            {draft.warnings.join(" ")}
           </Alert>
         ) : null}
 
@@ -663,6 +729,8 @@ export function ReportDesignEditorPage() {
             bindingDisabledReason={bindingDisabledReason}
             onAddField={addFieldElement}
             onAddFields={(fields) => addFieldElements(fields)}
+            onAddTable={(field) => addArrayComponent(field, "table")}
+            onAddRepeater={(field) => addArrayComponent(field, "repeater")}
             onUpdateBinding={updateBinding}
             onDuplicate={duplicateElementWithBinding}
             onRemove={removeElementWithBinding}
@@ -712,7 +780,7 @@ export function ReportDesignEditorPage() {
                 </Alert>
               ) : null}
 
-              {analysisId && analysisVersionsQuery.data?.find((version) => version.analysisId === analysisId) ? (
+                {analysisId && analysisVersionsQuery.data?.find((version) => version.analysisId === analysisId) ? (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Badge tone="outline">{analysisVersionsQuery.data.find((version) => version.analysisId === analysisId)?.schemaKey || "Unknown schema"}</Badge>
                   {analysisVersionsQuery.data.find((version) => version.analysisId === analysisId)?.schemaVersion ? (
@@ -720,16 +788,34 @@ export function ReportDesignEditorPage() {
                   ) : null}
                 </div>
               ) : null}
+              {runMode === "render" ? (
+                <SelectField
+                  label="Render format"
+                  value={renderFormat}
+                  onChange={(event) => setRenderFormat(event.target.value as ReportRenderFormat)}
+                  options={[
+                    { label: "HTML", value: "html" },
+                    { label: "JSON", value: "json" },
+                    { label: "PDF", value: "pdf" },
+                    { label: "DOCX", value: "docx" },
+                  ]}
+                  className="mt-4"
+                />
+              ) : null}
             </div>
 
             <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-ink-200 px-5 py-4 sm:flex-row sm:justify-end">
               <Button type="button" variant="secondary" onClick={() => setRunMode(null)}>Cancel</Button>
               <Button
                 type="button"
-                isLoading={runMode === "preview" ? previewMutation.isPending : generateMutation.isPending}
+                isLoading={runMode === "preview" ? previewMutation.isPending : runMode === "render" ? renderMutation.isPending : generateMutation.isPending}
                 onClick={() => {
                   if (runMode === "preview") {
                     previewMutation.mutate();
+                    return;
+                  }
+                  if (runMode === "render") {
+                    renderMutation.mutate();
                     return;
                   }
                   generateMutation.mutate();

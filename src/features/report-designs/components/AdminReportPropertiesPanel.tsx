@@ -123,6 +123,60 @@ function ElementProperties({
         </>
       ) : null}
 
+      {element.type === "table" ? (
+        <>
+          <TextField label="Label" value={element.content ?? ""} onChange={(event) => updateElement(element.id, { content: event.target.value })} />
+          <TextField label="Source key" value={element.sourceKey ?? "case_analysis"} onChange={(event) => updateElement(element.id, { sourceKey: event.target.value })} />
+          <TextField label="Array path" value={element.path ?? ""} onChange={(event) => updateElement(element.id, { path: event.target.value })} />
+          <TextField label="Empty state" value={element.emptyState ?? ""} onChange={(event) => updateElement(element.id, { emptyState: event.target.value })} />
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-ink-700">Columns</p>
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-8 px-2 py-1 text-xs"
+                onClick={() => updateElement(element.id, { columns: [...(element.columns ?? []), { id: `column-${Date.now()}`, label: "Column", path: "" }] })}
+              >
+                Add column
+              </Button>
+            </div>
+            {(element.columns ?? []).map((column, index) => (
+              <div key={column.id} className="grid gap-2 rounded-md border border-ink-200 p-2">
+                <TextField label="Column label" value={column.label} onChange={(event) => updateElement(element.id, { columns: (element.columns ?? []).map((item) => item.id === column.id ? { ...item, label: event.target.value } : item) })} />
+                <TextField label="Column path" value={column.path} onChange={(event) => updateElement(element.id, { columns: (element.columns ?? []).map((item) => item.id === column.id ? { ...item, path: event.target.value } : item) })} />
+                <TextField label="Fallback" value={String(column.fallback ?? "")} onChange={(event) => updateElement(element.id, { columns: (element.columns ?? []).map((item) => item.id === column.id ? { ...item, fallback: event.target.value } : item) })} />
+                <TextField label="Format" value={column.format ?? ""} onChange={(event) => updateElement(element.id, { columns: (element.columns ?? []).map((item) => item.id === column.id ? { ...item, format: event.target.value } : item) })} />
+                <Button type="button" variant="ghost" className="justify-start" onClick={() => updateElement(element.id, { columns: (element.columns ?? []).filter((_, columnIndex) => columnIndex !== index) })}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Remove column
+                </Button>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {element.type === "conditional" ? (
+        <>
+          <TextField label="Label" value={element.content ?? ""} onChange={(event) => updateElement(element.id, { content: event.target.value })} />
+          <TextField label="Visibility source key" value={element.visibility?.sourceKey ?? "case_analysis"} onChange={(event) => updateElement(element.id, { visibility: { sourceKey: event.target.value, path: element.visibility?.path ?? "", operator: element.visibility?.operator ?? "exists", value: element.visibility?.value } })} />
+          <TextField label="Visibility path" value={element.visibility?.path ?? ""} onChange={(event) => updateElement(element.id, { visibility: { sourceKey: element.visibility?.sourceKey ?? "case_analysis", path: event.target.value, operator: element.visibility?.operator ?? "exists", value: element.visibility?.value } })} />
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-ink-700">Operator</span>
+            <select
+              value={element.visibility?.operator ?? "exists"}
+              onChange={(event) => updateElement(element.id, { visibility: { sourceKey: element.visibility?.sourceKey ?? "case_analysis", path: element.visibility?.path ?? "", operator: event.target.value as NonNullable<ReportElement["visibility"]>["operator"], value: element.visibility?.value } })}
+              className="min-h-10 rounded-md border border-ink-300 px-3 py-2"
+            >
+              {["exists", "notEmpty", "equals", "notEquals", "greaterThan", "lessThan", "includes"].map((operator) => <option key={operator} value={operator}>{operator}</option>)}
+            </select>
+          </label>
+          <TextField label="Compare value" value={String(element.visibility?.value ?? "")} onChange={(event) => updateElement(element.id, { visibility: { sourceKey: element.visibility?.sourceKey ?? "case_analysis", path: element.visibility?.path ?? "", operator: element.visibility?.operator ?? "exists", value: event.target.value } })} />
+          <TextField label="Hidden label" value={element.emptyState ?? ""} onChange={(event) => updateElement(element.id, { emptyState: event.target.value })} />
+        </>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <NumberInput label="Font size" value={element.style.fontSize ?? 14} onChange={(value) => updateElement(element.id, { style: { fontSize: value } })} />
         <label className="grid gap-1 text-sm">
@@ -206,6 +260,8 @@ function PolicySchemaMappings({
   disabledReason,
   onAddField,
   onAddFields,
+  onAddTable,
+  onAddRepeater,
 }: {
   schemaFields: StructuredOutputSchemaField[];
   bindings: ReportDesignBinding[];
@@ -213,6 +269,8 @@ function PolicySchemaMappings({
   disabledReason?: string;
   onAddField: (field: StructuredOutputSchemaField) => void;
   onAddFields: (fields: StructuredOutputSchemaField[]) => void;
+  onAddTable: (field: StructuredOutputSchemaField) => void;
+  onAddRepeater: (field: StructuredOutputSchemaField) => void;
 }) {
   const template = useReportDesignerStore((state) => state.template);
   const [search, setSearch] = useState("");
@@ -320,7 +378,7 @@ function PolicySchemaMappings({
                           <div className="min-w-0">
                             <p className="break-words text-xs font-semibold text-ink-800">{field.label}</p>
                             <p className="mt-1 break-all font-mono text-[11px] text-ink-500">{field.path}</p>
-                            <p className="mt-2 text-[11px] font-medium text-ink-500">{getFieldTypeLabel(field)}</p>
+                        <p className="mt-2 text-[11px] font-medium text-ink-500">{getFieldTypeLabel(field)}</p>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-1">
                             {field.sourceKey ? <Badge tone="muted">{field.sourceKey}</Badge> : null}
@@ -328,10 +386,24 @@ function PolicySchemaMappings({
                           </div>
                         </div>
                         {field.description ? <p className="mt-2 break-words text-xs text-ink-500">{field.description}</p> : null}
-                        <Button type="button" variant="secondary" className="mt-3 w-full justify-start" onClick={() => onAddField(field)}>
-                          <Plus className="h-4 w-4" aria-hidden="true" />
-                          Add to page
-                        </Button>
+                        <div className="mt-3 grid gap-2">
+                          <Button type="button" variant="secondary" className="w-full justify-start" onClick={() => onAddField(field)}>
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            {field.array ? "Add as text/list" : "Add to page"}
+                          </Button>
+                          {field.array || field.supportsTable ? (
+                            <Button type="button" variant="secondary" className="w-full justify-start" onClick={() => onAddTable(field)}>
+                              <Plus className="h-4 w-4" aria-hidden="true" />
+                              Add as table
+                            </Button>
+                          ) : null}
+                          {field.array || field.supportsRepeater ? (
+                            <Button type="button" variant="secondary" className="w-full justify-start" onClick={() => onAddRepeater(field)}>
+                              <Plus className="h-4 w-4" aria-hidden="true" />
+                              Add as repeater
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -354,6 +426,8 @@ export function AdminReportPropertiesPanel({
   bindingDisabledReason,
   onAddField,
   onAddFields,
+  onAddTable,
+  onAddRepeater,
   onUpdateBinding,
   onDuplicate,
   onRemove,
@@ -364,6 +438,8 @@ export function AdminReportPropertiesPanel({
   bindingDisabledReason?: string;
   onAddField: (field: StructuredOutputSchemaField) => void;
   onAddFields: (fields: StructuredOutputSchemaField[]) => void;
+  onAddTable: (field: StructuredOutputSchemaField) => void;
+  onAddRepeater: (field: StructuredOutputSchemaField) => void;
   onUpdateBinding: (componentId: string, updates: Partial<ReportDesignBinding>) => void;
   onDuplicate: (elementId: string) => void;
   onRemove: (elementId: string) => void;
@@ -416,7 +492,7 @@ export function AdminReportPropertiesPanel({
               <Badge tone="muted">{bindings.length} mapped</Badge>
             </div>
             <div className="mt-4">
-              <PolicySchemaMappings schemaFields={schemaFields} bindings={bindings} activePage={activePage} disabledReason={bindingDisabledReason} onAddField={onAddField} onAddFields={onAddFields} />
+              <PolicySchemaMappings schemaFields={schemaFields} bindings={bindings} activePage={activePage} disabledReason={bindingDisabledReason} onAddField={onAddField} onAddFields={onAddFields} onAddTable={onAddTable} onAddRepeater={onAddRepeater} />
             </div>
           </section>
         </div>

@@ -1,5 +1,5 @@
 import { API_BASE_URL, ApiError, apiFetch } from "../../lib/api";
-import type { ReportDesignGenerateResult, ReportDesignRunInput, SaveReportDesignInput } from "./reportDesigns.types";
+import type { ReportDesignGenerateResult, ReportDesignRenderInput, ReportDesignRunInput, SaveReportDesignInput } from "./reportDesigns.types";
 import {
   normalizeReportDesign,
   normalizeReportDesigns,
@@ -60,8 +60,14 @@ export async function getReportDataSourceFields(sourceKey: string, schemaKey?: s
 }
 
 export async function getStructuredOutputSchemaFields(schemaKey: string) {
-  const response = await apiFetch<unknown>(`/api/admin/structured-output-schemas/${encodeURIComponent(schemaKey)}/fields`, { method: "GET" });
-  return normalizeStructuredOutputSchemaFields(response);
+  try {
+    const response = await apiFetch<unknown>(`/api/admin/structured-output-schemas/by-key/${encodeURIComponent(schemaKey)}/fields`, { method: "GET" });
+    return normalizeStructuredOutputSchemaFields(response);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    const response = await apiFetch<unknown>(`/api/admin/structured-output-schemas/${encodeURIComponent(schemaKey)}/fields`, { method: "GET" });
+    return normalizeStructuredOutputSchemaFields(response);
+  }
 }
 
 export async function getReportDesigns(schemaKey?: string) {
@@ -110,13 +116,13 @@ export function previewReportDesign(reportDesignId: string, payload: ReportDesig
   });
 }
 
-export async function generateReportDesign(reportDesignId: string, payload: ReportDesignRunInput): Promise<ReportDesignGenerateResult> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/report-designs/${encodeURIComponent(reportDesignId)}/generate`, {
+async function runReportDesignEndpoint(path: string, payload: ReportDesignRunInput | ReportDesignRenderInput): Promise<ReportDesignGenerateResult> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json,application/pdf,application/octet-stream,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      Accept: "application/json,text/html,application/pdf,application/octet-stream,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     },
     body: JSON.stringify(payload),
   });
@@ -134,10 +140,25 @@ export async function generateReportDesign(reportDesignId: string, payload: Repo
     };
   }
 
+  if (contentType.includes("text/html")) {
+    return {
+      kind: "html",
+      html: await response.text(),
+    };
+  }
+
   return {
     kind: "file",
     blob: await response.blob(),
     fileName: getFilenameFromDisposition(response.headers.get("content-disposition")) ?? "cloud-insure-report",
     contentType,
   };
+}
+
+export function generateReportDesign(reportDesignId: string, payload: ReportDesignRunInput): Promise<ReportDesignGenerateResult> {
+  return runReportDesignEndpoint(`/api/admin/report-designs/${encodeURIComponent(reportDesignId)}/generate`, payload);
+}
+
+export function renderReportDesign(reportDesignId: string, payload: ReportDesignRenderInput): Promise<ReportDesignGenerateResult> {
+  return runReportDesignEndpoint(`/api/admin/report-designs/${encodeURIComponent(reportDesignId)}/render`, payload);
 }

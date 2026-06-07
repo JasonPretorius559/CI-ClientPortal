@@ -6,15 +6,18 @@ import { useReportDesignerStore } from "../../reports/reportDesigner.store";
 import { exportElementToPdf } from "../../reports/reportExport";
 import { ReportPagePreview } from "../../reports/components/ReportPagePreview";
 
-function unwrapPayload(payload: unknown) {
-  if (payload && typeof payload === "object" && !Array.isArray(payload) && "data" in payload) {
-    return (payload as { data?: unknown }).data ?? payload;
-  }
-  return payload;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function unwrapPayload(payload: unknown) {
+  if (isRecord(payload) && payload.kind === "json" && "payload" in payload) {
+    return unwrapPayload(payload.payload);
+  }
+  if (isRecord(payload) && "data" in payload) {
+    return payload.data ?? payload;
+  }
+  return payload;
 }
 
 function readWarnings(payload: unknown) {
@@ -25,6 +28,12 @@ function readWarnings(payload: unknown) {
   return warnings
     .map((warning) => (typeof warning === "string" ? warning : isRecord(warning) && typeof warning.message === "string" ? warning.message : ""))
     .filter(Boolean);
+}
+
+function readHtml(payload: unknown) {
+  if (isRecord(payload) && payload.kind === "html" && typeof payload.html === "string") return payload.html;
+  const data = unwrapPayload(payload);
+  return isRecord(data) && typeof data.html === "string" ? data.html : "";
 }
 
 function buildPreviewData(payload: unknown, template: ReturnType<typeof useReportDesignerStore.getState>["template"]) {
@@ -61,6 +70,7 @@ export function AdminReportPreviewModal({
   const setPreviewData = useReportDesignerStore((state) => state.setPreviewData);
   const template = useReportDesignerStore((state) => state.template);
   const warnings = readWarnings(payload);
+  const html = readHtml(payload);
 
   useEffect(() => {
     if (open) {
@@ -94,7 +104,16 @@ export function AdminReportPreviewModal({
                 {warnings.join(" ")}
               </Alert>
             ) : null}
-            <ReportPagePreview readonly />
+            {html ? (
+              <div className="w-[794px] max-w-full overflow-hidden rounded-lg border border-ink-300 bg-white shadow-soft">
+                <div className="border-b border-ink-200 px-5 py-4">
+                  <p className="text-sm font-semibold text-ink-950">HTML render</p>
+                </div>
+                <iframe title="Report HTML preview" srcDoc={html} sandbox="" className="h-[48rem] w-full bg-white" />
+              </div>
+            ) : (
+              <ReportPagePreview readonly />
+            )}
             <div className="w-[794px] max-w-full overflow-hidden rounded-lg border border-ink-300 bg-white shadow-soft">
               <div className="border-b border-ink-200 px-5 py-4">
                 <p className="text-sm font-semibold text-ink-950">Hydrated preview payload</p>

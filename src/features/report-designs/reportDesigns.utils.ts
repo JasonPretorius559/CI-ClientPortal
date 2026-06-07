@@ -7,6 +7,7 @@ import type {
   ReportDesign,
   ReportDesignBinding,
   ReportDesignComponent,
+  ReportDesignStatus,
   SaveReportDesignInput,
   StructuredOutputSchema,
   StructuredOutputSchemaField,
@@ -46,6 +47,13 @@ function readBoolean(record: Record<string, unknown>, keys: string[]) {
   return false;
 }
 
+function readStatus(record: Record<string, unknown>): ReportDesignStatus | undefined {
+  const status = readString(record, ["status", "state"]).toLowerCase();
+  if (status === "draft" || status === "published" || status === "archived") return status;
+  if (readBoolean(record, ["isArchived", "archived"])) return "archived";
+  return undefined;
+}
+
 function readArray(payload: unknown, keys: string[]) {
   if (Array.isArray(payload)) return payload;
   if (!isRecord(payload)) return [];
@@ -78,6 +86,7 @@ function flattenFieldItems(items: unknown[], sourceKey?: string, flattened: Stru
     const label = readString(item, ["label", "displayName", "title", "name", "key"]) || path;
     const description = readString(item, ["description", "helpText", "summary"]);
     const type = readString(item, ["type", "fieldType", "valueType", "dataType"]) || "string";
+    const array = readBoolean(item, ["array", "isArray"]) || type.toLowerCase().includes("array");
     const required = readBoolean(item, ["required", "isRequired"]);
 
     if (path) {
@@ -86,8 +95,11 @@ function flattenFieldItems(items: unknown[], sourceKey?: string, flattened: Stru
         label,
         description,
         type,
+        array,
         required,
         sourceKey,
+        supportsTable: readBoolean(item, ["supportsTable"]),
+        supportsRepeater: readBoolean(item, ["supportsRepeater"]),
       });
     }
 
@@ -147,13 +159,24 @@ export function normalizeStructuredOutputSchemas(payload: unknown): StructuredOu
       const key = readString(item, ["schemaKey", "key", "name", "id", "_id"]);
       if (!key) return null;
 
-      return {
+      const normalized: StructuredOutputSchema = {
+        id: readString(item, ["id", "_id"]) || undefined,
+        _id: readString(item, ["_id"]) || undefined,
         key,
         name: readString(item, ["label", "name", "title", "schemaName"]) || key,
         description: readString(item, ["description", "summary"]),
         version: readNumber(item, ["schemaVersion", "version"]),
+        status: readStatus(item),
         isActive: item.isActive !== false,
+        source: readString(item, ["source"]) === "code" ? "code" : "admin",
+        caseType: isRecord(item.caseType) ? readString(item.caseType, ["id", "_id"]) : readString(item, ["caseType", "caseTypeId"]) || undefined,
+        linkedCaseType: isRecord(item.linkedCaseType) ? readString(item.linkedCaseType, ["id", "_id"]) : readString(item, ["linkedCaseType", "linkedCaseTypeId"]) || undefined,
+        caseTypeName: isRecord(item.caseType) ? readString(item.caseType, ["name", "label", "title"]) : readString(item, ["caseTypeName"]) || undefined,
+        linkedCaseTypeName: isRecord(item.linkedCaseType) ? readString(item.linkedCaseType, ["name", "label", "title"]) : readString(item, ["linkedCaseTypeName"]) || undefined,
+        caseTypeNameSnapshot: readString(item, ["caseTypeNameSnapshot"]) || undefined,
+        linkedCaseTypeNameSnapshot: readString(item, ["linkedCaseTypeNameSnapshot"]) || undefined,
       };
+      return normalized;
     })
     .filter((item): item is StructuredOutputSchema => Boolean(item))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -218,6 +241,8 @@ function normalizeReportDesignComponent(item: unknown): ReportDesignComponent | 
     type: readString(item, ["type"]) || "text",
     label,
     fieldKey: readString(item, ["fieldKey", "path"]) || undefined,
+    sourceKey: readString(item, ["sourceKey"]) || undefined,
+    path: readString(item, ["path"]) || undefined,
     assetId: readString(item, ["assetId"]) || undefined,
     page: readString(item, ["page"]) || "cover",
     x: readNumber(item, ["x"]) ?? 48,
@@ -227,6 +252,27 @@ function normalizeReportDesignComponent(item: unknown): ReportDesignComponent | 
     zIndex: readNumber(item, ["zIndex"]) ?? 1,
     locked: readBoolean(item, ["locked"]),
     content: readString(item, ["content", "text", "value"]) || undefined,
+    columns: Array.isArray(item.columns)
+      ? item.columns.filter(isRecord).map((column, index) => ({
+          id: readString(column, ["id"]) || `column-${index + 1}`,
+          label: readString(column, ["label", "name", "title"]) || `Column ${index + 1}`,
+          path: readString(column, ["path", "fieldPath"]),
+          fallback: column.fallback,
+          format: readString(column, ["format"]) || undefined,
+        }))
+      : undefined,
+    visibility: isRecord(item.visibility)
+      ? {
+          sourceKey: readString(item.visibility, ["sourceKey"]) || DEFAULT_REPORT_DATA_SOURCE_KEY,
+          path: readString(item.visibility, ["path", "fieldPath"]),
+          operator: (readString(item.visibility, ["operator"]) || "exists") as NonNullable<ReportDesignComponent["visibility"]>["operator"],
+          value: item.visibility.value,
+        }
+      : undefined,
+    components: Array.isArray(item.components)
+      ? item.components.map(normalizeReportDesignComponent).filter((component): component is ReportDesignComponent => Boolean(component))
+      : undefined,
+    emptyState: readString(item, ["emptyState"]) || undefined,
     style: {
       fontFamily: readString(item, ["fontFamily"]) || (isRecord(item.style) ? readString(item.style, ["fontFamily"]) : "") || undefined,
       fontSize: readNumber(item, ["fontSize"]) ?? (isRecord(item.style) ? readNumber(item.style, ["fontSize"]) : null) ?? 16,
@@ -267,13 +313,38 @@ function normalizeReportDesignBinding(item: unknown): ReportDesignBinding | null
   };
 }
 
+function looksLikeReportDesignRecord(value: unknown) {
+  return isRecord(value) && (
+    typeof value.schemaKey === "string" ||
+    typeof value.name === "string" ||
+    Array.isArray(value.bindings) ||
+    Array.isArray(value.fieldBindings) ||
+    isRecord(value.design)
+  );
+}
+
+function unwrapReportDesignPayload(payload: unknown) {
+  if (!isRecord(payload)) return payload;
+  const data = isRecord(payload.data) ? payload.data : null;
+
+  for (const candidate of [
+    data?.design,
+    data?.reportDesign,
+    data?.record,
+    data?.item,
+    payload.design,
+    payload.reportDesign,
+    payload.record,
+    payload.item,
+  ]) {
+    if (looksLikeReportDesignRecord(candidate)) return candidate;
+  }
+
+  return data ?? payload;
+}
+
 export function normalizeReportDesign(payload: unknown): ReportDesign {
-  const container =
-    isRecord(payload) && isRecord(payload.data)
-      ? payload.data
-      : isRecord(payload) && isRecord(payload.reportDesign)
-        ? payload.reportDesign
-        : payload;
+  const container = unwrapReportDesignPayload(payload);
 
   if (!isRecord(container)) {
     return {
@@ -308,6 +379,7 @@ export function normalizeReportDesign(payload: unknown): ReportDesign {
       template: storedTemplate,
     },
     bindings: rawBindings.map(normalizeReportDesignBinding).filter((item): item is ReportDesignBinding => Boolean(item)),
+    status: readStatus(container),
     isArchived: readBoolean(container, ["isArchived", "archived"]),
     createdAt: readString(container, ["createdAt"]) || undefined,
     updatedAt: readString(container, ["updatedAt"]) || undefined,
@@ -357,6 +429,8 @@ export function createComponentBindingFromField(
     type: "field",
     label: field.label || field.path,
     fieldKey: field.path,
+    sourceKey: field.sourceKey || DEFAULT_REPORT_DATA_SOURCE_KEY,
+    path: field.path,
     page: "cover",
     x: 64,
     y: 64,
@@ -389,7 +463,7 @@ function componentToElement(component: ReportDesignComponent, binding: ReportDes
 
   return {
     id: component.id,
-    type: (component.type === "image" || component.type === "shape" || component.type === "field" ? component.type : "text"),
+    type: (["image", "shape", "field", "table", "repeater", "conditional", "pageBreak"].includes(component.type) ? component.type : "text") as ReportElement["type"],
     page: component.page ?? "cover",
     x: component.x ?? 48,
     y: component.y ?? 48,
@@ -399,7 +473,13 @@ function componentToElement(component: ReportDesignComponent, binding: ReportDes
     locked: component.locked,
     content: component.type === "field" ? fallbackContent : component.content,
     fieldKey: component.type === "field" ? binding?.path ?? component.fieldKey : undefined,
+    sourceKey: component.sourceKey ?? binding?.sourceKey,
+    path: component.path,
     assetId: component.assetId,
+    columns: component.columns,
+    visibility: component.visibility,
+    components: component.components?.map((child) => componentToElement(child, undefined)),
+    emptyState: component.emptyState,
     style: {
       fontFamily: component.style?.fontFamily,
       fontSize: component.style?.fontSize,
@@ -427,6 +507,8 @@ function elementToComponent(element: ReportElement, binding: ReportDesignBinding
     type: element.type,
     label: binding?.path || defaultComponentLabel(element),
     fieldKey: element.fieldKey,
+    sourceKey: element.sourceKey ?? binding?.sourceKey,
+    path: element.path,
     assetId: element.assetId,
     page: element.page,
     x: element.x,
@@ -436,6 +518,10 @@ function elementToComponent(element: ReportElement, binding: ReportDesignBinding
     zIndex: element.zIndex,
     locked: element.locked,
     content: element.type === "field" ? undefined : element.content,
+    columns: element.columns,
+    visibility: element.visibility,
+    components: element.components?.map((child) => elementToComponent(child, undefined)),
+    emptyState: element.emptyState,
     style: {
       fontFamily: element.style.fontFamily,
       fontSize: element.style.fontSize,
@@ -523,6 +609,8 @@ export function buildSaveReportDesignInput(design: ReportDesign): SaveReportDesi
         type: component.type || "text",
         label: component.label.trim(),
         fieldKey: component.fieldKey,
+        sourceKey: component.sourceKey,
+        path: component.path,
         assetId: component.assetId,
         page: component.page,
         x: component.x,
@@ -532,6 +620,10 @@ export function buildSaveReportDesignInput(design: ReportDesign): SaveReportDesi
         zIndex: component.zIndex,
         locked: component.locked,
         content: component.content,
+        columns: component.columns,
+        visibility: component.visibility,
+        components: component.components,
+        emptyState: component.emptyState,
         style: component.style,
       })),
       template: design.design.template,
@@ -546,15 +638,28 @@ export function buildSaveReportDesignInput(design: ReportDesign): SaveReportDesi
   };
 }
 
-export function getSchemaMismatchMessage(error: unknown) {
-  if (error instanceof ApiError && error.status === 409) {
-    return "Report design schema does not match selected analysis schema.";
+function readErrorPayloadMessage(payload: unknown): string {
+  if (!isRecord(payload)) return "";
+  const message = readString(payload, ["message", "error"]);
+  if (message) return message;
+  if (isRecord(payload.data)) return readErrorPayloadMessage(payload.data);
+  return "";
+}
+
+export function getReportDesignRunErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    const payloadMessage = readErrorPayloadMessage(error.errors);
+    if (payloadMessage) return payloadMessage;
+    if (error.status === 501) return "This report render format is not implemented yet.";
+    if (error.message.trim()) return error.message;
   }
   if (error instanceof Error && error.message.trim()) {
     return error.message;
   }
   return "Something went wrong. Please try again.";
 }
+
+export const getSchemaMismatchMessage = getReportDesignRunErrorMessage;
 
 export function getSchemaDisplayName(schema: StructuredOutputSchema | undefined, schemaKey: string) {
   return schema?.name || schemaKey || "Unknown schema";
@@ -576,6 +681,7 @@ export function isAdminUser(user: unknown) {
 
 export function getFieldTypeLabel(field: StructuredOutputSchemaField) {
   const parts = [field.type];
+  if (field.array) parts.push("array");
   if (field.required) parts.push("required");
   return parts.join(" | ");
 }

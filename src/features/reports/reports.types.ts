@@ -22,7 +22,8 @@ export type ReportTheme = {
 
 export type ReportElement = {
   id: string;
-  type: "text" | "image" | "field" | "shape";
+  type: "text" | "image" | "field" | "shape" | "table" | "repeater" | "conditional" | "pageBreak";
+  label?: string;
   page: "cover" | string;
   x: number;
   y: number;
@@ -32,7 +33,24 @@ export type ReportElement = {
   locked?: boolean;
   content?: string;
   fieldKey?: string;
+  sourceKey?: string;
+  path?: string;
   assetId?: string;
+  columns?: Array<{
+    id: string;
+    label: string;
+    path: string;
+    fallback?: unknown;
+    format?: string;
+  }>;
+  visibility?: {
+    sourceKey?: string;
+    path: string;
+    operator: "exists" | "notEmpty" | "equals" | "notEquals" | "greaterThan" | "lessThan" | "includes";
+    value?: unknown;
+  };
+  components?: ReportElement[];
+  emptyState?: string;
   style: {
     fontFamily?: string;
     fontSize?: number;
@@ -159,7 +177,8 @@ export const reportThemeSchema = z.object({
 
 export const reportElementSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(["text", "image", "field", "shape"]),
+  type: z.enum(["text", "image", "field", "shape", "table", "repeater", "conditional", "pageBreak"]),
+  label: z.string().optional(),
   page: z.string().min(1),
   x: z.number(),
   y: z.number(),
@@ -169,7 +188,24 @@ export const reportElementSchema = z.object({
   locked: z.boolean().optional(),
   content: z.string().optional(),
   fieldKey: z.string().optional(),
+  sourceKey: z.string().optional(),
+  path: z.string().optional(),
   assetId: z.string().optional(),
+  columns: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    path: z.string(),
+    fallback: z.unknown().optional(),
+    format: z.string().optional(),
+  })).optional(),
+  visibility: z.object({
+    sourceKey: z.string().optional(),
+    path: z.string(),
+    operator: z.enum(["exists", "notEmpty", "equals", "notEquals", "greaterThan", "lessThan", "includes"]),
+    value: z.unknown().optional(),
+  }).optional(),
+  components: z.custom<ReportElement[]>().optional(),
+  emptyState: z.string().optional(),
   style: z
     .object({
       fontFamily: z.string().optional(),

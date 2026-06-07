@@ -9,7 +9,8 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "My Cases", to: "/cases" },
   { label: "New Case", to: "/cases/new" },
-  { label: "Report Designer", to: "/admin/report-designs/new", adminOnly: true },
+  { label: "Admin Setup", to: "/admin/setup", adminOnly: true },
+  { label: "Report Designs", to: "/admin/report-designs", adminOnly: true },
   { label: "Profile", to: "/profile" },
   { label: "Settings", to: "/settings" },
 ];
