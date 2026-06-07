@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -24,6 +23,23 @@ import {
 } from "../../components/ui/Card";
 import { formatDate } from "../../lib/dates";
 import { ApiError } from "../../lib/api";
+import { useToast } from "../../components/ui/toast-context";
+import { useAuth } from "../auth/useAuth";
+import { isAdminUser } from "../auth/auth.utils";
+import {
+  generateReportDesign,
+  getReportDesigns,
+  previewReportDesign,
+} from "../report-designs/reportDesigns.api";
+import {
+  getReportDesignId,
+  getReportDesignTemplate,
+  getSchemaMismatchMessage,
+} from "../report-designs/reportDesigns.utils";
+import type { ReportDesign } from "../report-designs/reportDesigns.types";
+import { useReportDesignerStore } from "../reports/reportDesigner.store";
+import { AdminReportPreviewModal } from "../report-designs/components/AdminReportPreviewModal";
+import { downloadBlob } from "../reports/reportExport";
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import {
   analyzeCase,
@@ -36,6 +52,7 @@ import {
 import { getCaseStatus, getCaseTitle, readCaseField } from "./cases.utils";
 
 const activeAnalysisStatuses = new Set(["queued", "running"]);
+const reportReadyAnalysisStatuses = new Set(["completed", "completed_with_warnings"]);
 
 const queuedMessages = [
   "Preparing analysis...",
@@ -155,7 +172,16 @@ function arrayFromPayload(payload: unknown, keys: string[]) {
 }
 
 function isCompleted(version: AnalysisVersion) {
-  return version.status?.trim().toLowerCase() === "completed";
+  return reportReadyAnalysisStatuses.has(version.status?.trim().toLowerCase());
+}
+
+function schemaVersionsMatch(left: string | number | null, right: string | number | null) {
+  if (left === null || right === null) return false;
+  return Number(left) === Number(right);
+}
+
+function reportDesignDisplayName(design: ReportDesign) {
+  return design.name || getReportDesignId(design) || "Untitled report design";
 }
 
 function defaultDownloadVersion(versions: AnalysisVersion[]) {
@@ -738,7 +764,16 @@ function LogsTimeline({ logs }: { logs: unknown[] }) {
 }
 
 export function CaseDetails({ caseItem }: { caseItem: unknown }) {
+  const { showToast } = useToast();
+  const { user } = useAuth();
+  const canUseReportDesigner = isAdminUser(user);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isReportDesignModalOpen, setIsReportDesignModalOpen] = useState(false);
+  const [selectedReportDesignId, setSelectedReportDesignId] = useState("");
+  const [reportDesignRunError, setReportDesignRunError] = useState<string | null>(null);
+  const [reportDesignPreviewOpen, setReportDesignPreviewOpen] = useState(false);
+  const [reportDesignPreviewPayload, setReportDesignPreviewPayload] = useState<unknown>(null);
+  const [reportDesignPreviewTitle, setReportDesignPreviewTitle] = useState("Report design preview");
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [selectedDownloadVersionId, setSelectedDownloadVersionId] =
     useState("");
@@ -749,6 +784,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [inputHash, setInputHash] = useState("");
   const [model, setModel] = useState("");
+  const setReportDesignerTemplate = useReportDesignerStore((state) => state.setTemplate);
 
   const files = getFiles(caseItem);
   const caseId = readDisplay(caseItem, ["caseId", "CaseId", "id", "_id"]);
@@ -814,6 +850,25 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     versions.find(
       (version) => version.analysisId === selectedDownloadVersionId,
     ) ?? null;
+  const selectedVersionSchemaKey = selectedVersion?.schemaKey ?? "";
+  const selectedVersionSchemaVersion = selectedVersion?.schemaVersion ?? null;
+  const reportDesignsQuery = useQuery({
+    queryKey: ["case-report-designs", selectedVersionSchemaKey],
+    queryFn: () => getReportDesigns(selectedVersionSchemaKey || undefined),
+    enabled: Boolean(isReportDesignModalOpen && selectedVersionSchemaKey),
+  });
+  const compatibleReportDesigns = useMemo(
+    () =>
+      (reportDesignsQuery.data ?? []).filter(
+        (design) =>
+          design.schemaKey === selectedVersionSchemaKey &&
+          schemaVersionsMatch(design.schemaVersion, selectedVersionSchemaVersion),
+      ),
+    [reportDesignsQuery.data, selectedVersionSchemaKey, selectedVersionSchemaVersion],
+  );
+  const selectedReportDesign =
+    compatibleReportDesigns.find((design) => getReportDesignId(design) === selectedReportDesignId) ??
+    null;
   const analysisStatus = statusFromPayload(statusQuery.data);
   const running = activeAnalysisStatuses.has(analysisStatus) || pollingEnabled;
   const logs = arrayFromPayload(logsQuery.data, [
@@ -835,8 +890,19 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   }, [defaultDownload, isDownloadModalOpen]);
 
   useEffect(() => {
+    if (!isReportDesignModalOpen) return;
+    setReportDesignRunError(null);
+    setSelectedReportDesignId((current) => {
+      if (compatibleReportDesigns.some((design) => getReportDesignId(design) === current)) {
+        return current;
+      }
+      return compatibleReportDesigns[0] ? getReportDesignId(compatibleReportDesigns[0]) : "";
+    });
+  }, [compatibleReportDesigns, isReportDesignModalOpen]);
+
+  useEffect(() => {
     if (!pollingEnabled) return;
-    if (analysisStatus === "completed" || analysisStatus === "failed") {
+    if (reportReadyAnalysisStatuses.has(analysisStatus) || analysisStatus === "failed") {
       setPollingEnabled(false);
       void versionsQuery.refetch();
       void logsQuery.refetch();
@@ -867,6 +933,68 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
         message.toLowerCase().includes("analysis limit") ||
           message.toLowerCase().includes("credit"),
       );
+    },
+  });
+
+  const previewReportDesignMutation = useMutation({
+    mutationFn: async () => {
+      if (!caseId || !selectedVersion || !selectedReportDesign) {
+        throw new Error("Select a completed analysis version and report design first.");
+      }
+
+      return previewReportDesign(getReportDesignId(selectedReportDesign), {
+        caseId,
+        analysisId: selectedVersion.analysisId,
+      });
+    },
+    onMutate: () => setReportDesignRunError(null),
+    onSuccess: (payload) => {
+      if (selectedReportDesign) {
+        setReportDesignerTemplate(getReportDesignTemplate(selectedReportDesign));
+        setReportDesignPreviewTitle(reportDesignDisplayName(selectedReportDesign));
+      }
+      setReportDesignPreviewPayload(payload);
+      setReportDesignPreviewOpen(true);
+      setIsReportDesignModalOpen(false);
+      showToast({ tone: "success", title: "Report design preview loaded." });
+    },
+    onError: (error) => {
+      const message = getSchemaMismatchMessage(error);
+      setReportDesignRunError(message);
+      showToast({ tone: "error", title: message });
+    },
+  });
+
+  const generateReportDesignMutation = useMutation({
+    mutationFn: async () => {
+      if (!caseId || !selectedVersion || !selectedReportDesign) {
+        throw new Error("Select a completed analysis version and report design first.");
+      }
+
+      return generateReportDesign(getReportDesignId(selectedReportDesign), {
+        caseId,
+        analysisId: selectedVersion.analysisId,
+      });
+    },
+    onMutate: () => setReportDesignRunError(null),
+    onSuccess: (result) => {
+      if (result.kind === "file") {
+        downloadBlob(result.blob, result.fileName);
+      } else {
+        if (selectedReportDesign) {
+          setReportDesignerTemplate(getReportDesignTemplate(selectedReportDesign));
+          setReportDesignPreviewTitle(reportDesignDisplayName(selectedReportDesign));
+        }
+        setReportDesignPreviewPayload(result.payload);
+        setReportDesignPreviewOpen(true);
+      }
+      setIsReportDesignModalOpen(false);
+      showToast({ tone: "success", title: "Report generated." });
+    },
+    onError: (error) => {
+      const message = getSchemaMismatchMessage(error);
+      setReportDesignRunError(message);
+      showToast({ tone: "error", title: message });
     },
   });
 
@@ -1092,16 +1220,19 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                 <Download className="h-4 w-4" aria-hidden="true" />
                 Download Report
               </Button>
-              {selectedVersion && isCompleted(selectedVersion) ? (
-                <Button asChild variant="secondary" className="w-full">
-                  <Link
-                    to={`/reports/designer?caseId=${caseId}&analysisId=${selectedVersion.analysisId}`}
-                  >
-                    <ScrollText className="h-4 w-4" aria-hidden="true" />
-                    Design Report
-                  </Link>
+              {canUseReportDesigner && selectedVersion && isCompleted(selectedVersion) ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => setIsReportDesignModalOpen(true)}
+                  disabled={!selectedVersion.schemaKey}
+                  title={!selectedVersion.schemaKey ? "The selected analysis does not include a structured output schema." : undefined}
+                >
+                  <ScrollText className="h-4 w-4" aria-hidden="true" />
+                  Design Report
                 </Button>
-              ) : (
+              ) : canUseReportDesigner ? (
                 <Button
                   variant="secondary"
                   disabled
@@ -1111,7 +1242,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                   <ScrollText className="h-4 w-4" aria-hidden="true" />
                   Design Report
                 </Button>
-              )}
+              ) : null}
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                 <Button
                   type="button"
@@ -1335,6 +1466,156 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
           </div>
         </div>
       ) : null}
+
+      {isReportDesignModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/45 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-design-selection-title"
+            className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-xl"
+          >
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-ink-200 px-5 py-4">
+              <div className="min-w-0">
+                <h2
+                  id="report-design-selection-title"
+                  className="text-base font-semibold text-ink-950"
+                >
+                  Select Report Design
+                </h2>
+                {selectedVersion ? (
+                  <p className="mt-1 break-words text-sm text-ink-600">
+                    Version {selectedVersion.versionNumber} uses {selectedVersion.schemaKey || "no schema"}
+                    {selectedVersion.schemaVersion ? ` v${selectedVersion.schemaVersion}` : ""}.
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsReportDesignModalOpen(false)}
+                className="min-h-9 px-3"
+              >
+                Close
+              </Button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+              {!selectedVersion || !isCompleted(selectedVersion) ? (
+                <Alert tone="info">
+                  Select a completed analysis version before choosing a report design.
+                </Alert>
+              ) : null}
+              {selectedVersion && !selectedVersion.schemaKey ? (
+                <Alert tone="error">
+                  The selected analysis version does not include a schema key, so it cannot be matched to a report design.
+                </Alert>
+              ) : null}
+              {reportDesignRunError ? (
+                <Alert tone="error" className="mb-4">
+                  {reportDesignRunError}
+                </Alert>
+              ) : null}
+              {reportDesignsQuery.isLoading ? (
+                <div className="space-y-3">
+                  <div className="h-20 animate-pulse rounded-lg bg-ink-100" />
+                  <div className="h-20 animate-pulse rounded-lg bg-ink-100" />
+                </div>
+              ) : null}
+              {reportDesignsQuery.isError ? (
+                <Alert tone="error">
+                  {reportDesignsQuery.error instanceof Error
+                    ? reportDesignsQuery.error.message
+                    : "Unable to load compatible report designs."}
+                </Alert>
+              ) : null}
+              {!reportDesignsQuery.isLoading && selectedVersion?.schemaKey && compatibleReportDesigns.length === 0 ? (
+                <Alert tone="info">
+                  No active report designs match this analysis schema and version.
+                </Alert>
+              ) : null}
+              <div className="space-y-3">
+                {compatibleReportDesigns.map((design) => {
+                  const designId = getReportDesignId(design);
+                  const selected = selectedReportDesignId === designId;
+
+                  return (
+                    <label
+                      key={designId || design.name}
+                      className={[
+                        selected ? "border-ink-950 shadow-sm" : "border-ink-200",
+                        "block cursor-pointer rounded-lg border p-4 transition hover:border-ink-950",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="radio"
+                          name="report-design"
+                          value={designId}
+                          checked={selected}
+                          onChange={() => setSelectedReportDesignId(designId)}
+                          className="mt-1 h-4 w-4 accent-ink-950"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="break-words text-sm font-semibold text-ink-950">
+                              {reportDesignDisplayName(design)}
+                            </p>
+                            <Badge tone="outline">{design.schemaKey}</Badge>
+                            {design.schemaVersion ? <Badge tone="muted">v{design.schemaVersion}</Badge> : null}
+                          </div>
+                          <p className="mt-2 break-words text-sm text-ink-600">
+                            {design.description || "No description provided."}
+                          </p>
+                          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                            <DetailRow label="Components" value={design.design.components.length} />
+                            <DetailRow label="Bindings" value={design.bindings.length} />
+                            <DetailRow label="Updated" value={formatDate(design.updatedAt)} />
+                          </dl>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-ink-200 px-5 py-4 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsReportDesignModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => previewReportDesignMutation.mutate()}
+                isLoading={previewReportDesignMutation.isPending}
+                disabled={!selectedReportDesign || generateReportDesignMutation.isPending}
+              >
+                Preview
+              </Button>
+              <Button
+                type="button"
+                onClick={() => generateReportDesignMutation.mutate()}
+                isLoading={generateReportDesignMutation.isPending}
+                disabled={!selectedReportDesign || previewReportDesignMutation.isPending}
+              >
+                Generate Report
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <AdminReportPreviewModal
+        open={reportDesignPreviewOpen}
+        onClose={() => setReportDesignPreviewOpen(false)}
+        payload={reportDesignPreviewPayload}
+        title={reportDesignPreviewTitle}
+      />
     </div>
   );
 }

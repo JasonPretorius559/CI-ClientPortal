@@ -1,10 +1,21 @@
 import { getReportAssetUrl } from "../reports.api";
 import { getReportAssetId, type ReportAsset, type ReportElement, type ReportPreviewData } from "../reports.types";
 
-function fieldValue(fieldKey: string | undefined, previewData: ReportPreviewData | null) {
+function getValueAtPath(source: unknown, path: string) {
+  if (!path) return undefined;
+
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, source);
+}
+
+function fieldValue(fieldKey: string | undefined, previewData: ReportPreviewData | null, fallback?: string) {
   if (!fieldKey) return "Select field";
-  const value = previewData?.fields?.[fieldKey] ?? previewData?.[fieldKey];
-  if (value === null || value === undefined || value === "") return `{${fieldKey}}`;
+  const value = previewData?.fields?.[fieldKey]
+    ?? getValueAtPath(previewData?.fields ?? null, fieldKey)
+    ?? getValueAtPath(previewData, fieldKey);
+  if (value === null || value === undefined || value === "") return fallback || `{${fieldKey}}`;
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
@@ -51,7 +62,7 @@ export function ReportElementRenderer({
     );
   }
 
-  const content = element.type === "field" ? fieldValue(element.fieldKey, previewData) : element.content;
+  const content = element.type === "field" ? fieldValue(element.fieldKey, previewData, element.content) : element.content;
 
   return (
     <div className="h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1 leading-tight" style={sharedStyle}>

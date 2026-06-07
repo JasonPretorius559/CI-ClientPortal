@@ -2,13 +2,14 @@ import { NavLink } from "react-router-dom";
 import { X } from "lucide-react";
 import { Button } from "../ui/Button";
 import { cn } from "../../lib/cn";
+import { useAuth } from "../../features/auth/useAuth";
+import { isAdminUser } from "../../features/auth/auth.utils";
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "My Cases", to: "/cases" },
   { label: "New Case", to: "/cases/new" },
-  { label: "Report Templates", to: "/reports/templates" },
-  { label: "Report Designer", to: "/reports/designer" },
+  { label: "Report Designer", to: "/admin/report-designs/new", adminOnly: true },
   { label: "Profile", to: "/profile" },
   { label: "Settings", to: "/settings" },
 ];
@@ -19,6 +20,9 @@ type MobileNavProps = {
 };
 
 export function MobileNav({ open, onClose }: MobileNavProps) {
+  const { user } = useAuth();
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdminUser(user));
+
   if (!open) return null;
 
   return (
@@ -35,7 +39,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
           </Button>
         </div>
         <nav className="mt-8 space-y-1" aria-label="Mobile navigation">
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

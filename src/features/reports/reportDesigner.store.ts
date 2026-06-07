@@ -13,6 +13,7 @@ type DesignerState = {
   updateTheme: (theme: Partial<ReportTheme>) => void;
   updatePage: (page: Partial<ReportPageSettings>) => void;
   updateCover: (cover: Partial<ReportCoverPage>) => void;
+  setActivePage: (pageId: string) => void;
   addElement: (element: Omit<ReportElement, "id"> & { id?: string }) => void;
   updateElement: (elementId: string, updates: Partial<ReportElement>) => void;
   removeElement: (elementId: string) => void;
@@ -55,6 +56,7 @@ export const useReportDesignerStore = create<DesignerState>((set, get) => ({
   updateTheme: (theme) => set((state) => ({ template: { ...state.template, theme: { ...state.template.theme, ...theme } }, dirty: true })),
   updatePage: (page) => set((state) => ({ template: { ...state.template, page: { ...state.template.page, ...page } }, dirty: true })),
   updateCover: (cover) => set((state) => ({ template: { ...state.template, coverPage: { ...state.template.coverPage, ...cover } }, dirty: true })),
+  setActivePage: (pageId) => set({ activePage: pageId, selectedElementId: null }),
   addElement: (element) =>
     set((state) => {
       const nextElement = { ...element, id: element.id ?? nanoid() };
@@ -100,6 +102,7 @@ export const useReportDesignerStore = create<DesignerState>((set, get) => ({
       return {
         template: updateCoverElements(state.template, (elements) => [...elements, duplicate]),
         selectedElementId: duplicate.id,
+        activePage: duplicate.page,
         dirty: true,
       };
     }),

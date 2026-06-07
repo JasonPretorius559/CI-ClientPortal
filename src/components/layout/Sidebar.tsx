@@ -1,18 +1,22 @@
 import { NavLink } from "react-router-dom";
-import { Briefcase, FilePlus2, Home, Settings, UserRound, Files, PenTool } from "lucide-react";
+import { Briefcase, FilePlus2, Home, Settings, UserRound, LibraryBig } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { useAuth } from "../../features/auth/useAuth";
+import { isAdminUser } from "../../features/auth/auth.utils";
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: Home },
   { label: "My Cases", to: "/cases", icon: Briefcase },
   { label: "New Case", to: "/cases/new", icon: FilePlus2 },
-  { label: "Report Templates", to: "/reports/templates", icon: Files },
-  { label: "Report Designer", to: "/reports/designer", icon: PenTool },
+  { label: "Report Designer", to: "/admin/report-designs/new", icon: LibraryBig, adminOnly: true },
   { label: "Profile", to: "/profile", icon: UserRound },
   { label: "Settings", to: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
+  const { user } = useAuth();
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdminUser(user));
+
   return (
    <aside className="hidden h-screen w-64 shrink-0 border-r border-ink-200 bg-white px-4 py-5 lg:flex lg:flex-col">
       <div className="px-2">
@@ -20,7 +24,7 @@ export function Sidebar() {
         <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
       </div>
       <nav className="mt-8 space-y-1" aria-label="Main navigation">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

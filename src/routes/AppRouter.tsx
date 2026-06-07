@@ -1,6 +1,7 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { FullPageLoader } from "../components/ui/LoadingSkeleton";
 import { useAuth } from "../features/auth/useAuth";
+import { isAdminUser } from "../features/auth/auth.utils";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { PortalLayout } from "../layouts/PortalLayout";
 import { CaseDetailPage } from "../pages/CaseDetailPage";
@@ -14,8 +15,8 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { SetPasswordPage } from "../pages/SetPasswordPage";
 import { SettingsPage } from "../pages/SettingsPage";
-import { ReportDesignerPage } from "../features/reports/ReportDesignerPage";
-import { ReportTemplatesPage } from "../features/reports/ReportTemplatesPage";
+import { ReportDesignEditorPage } from "../pages/admin/ReportDesignEditorPage";
+import { ReportDesignsPage } from "../pages/admin/ReportDesignsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 
@@ -23,6 +24,13 @@ function RootRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <FullPageLoader />;
   return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />;
+}
+
+function AdminOnlyRoute() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <FullPageLoader />;
+  if (!isAdminUser(user)) return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
 }
 
 export function AppRouter() {
@@ -51,10 +59,15 @@ export function AppRouter() {
           <Route path="/cases" element={<CasesPage />} />
           <Route path="/cases/new" element={<NewCasePage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
-          <Route path="/cases/:id/report-designer" element={<ReportDesignerPage />} />
-          <Route path="/reports/templates" element={<ReportTemplatesPage />} />
-          <Route path="/reports/designer" element={<ReportDesignerPage />} />
-          <Route path="/reports/designer/:templateId" element={<ReportDesignerPage />} />
+          <Route path="/cases/:id/report-designer" element={<Navigate to="/admin/report-designs" replace />} />
+          <Route path="/reports/templates" element={<Navigate to="/admin/report-designs" replace />} />
+          <Route path="/reports/designer" element={<Navigate to="/admin/report-designs" replace />} />
+          <Route path="/reports/designer/:templateId" element={<Navigate to="/admin/report-designs" replace />} />
+          <Route element={<AdminOnlyRoute />}>
+            <Route path="/admin/report-designs" element={<ReportDesignsPage />} />
+            <Route path="/admin/report-designs/new" element={<ReportDesignEditorPage />} />
+            <Route path="/admin/report-designs/:id" element={<ReportDesignEditorPage />} />
+          </Route>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

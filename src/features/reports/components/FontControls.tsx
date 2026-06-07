@@ -1,4 +1,5 @@
 import type { ReportTheme } from "../reports.types";
+import { supportedReportFonts } from "../reportFonts";
 
 export function FontControls({
   theme,
@@ -11,11 +12,17 @@ export function FontControls({
     <div className="grid gap-3">
       <label className="grid gap-1 text-sm">
         <span className="font-semibold text-ink-700">Font family</span>
-        <input
+        <select
           value={theme.fontFamily}
           onChange={(event) => onChange({ fontFamily: event.target.value })}
-          className="min-h-10 min-w-0 rounded-md border border-ink-300 px-3 py-2"
-        />
+          className="min-h-10 min-w-0 rounded-md border border-ink-300 bg-white px-3 py-2"
+        >
+          {supportedReportFonts.map((font) => (
+            <option key={font.value} value={font.value}>
+              {font.label}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm">
