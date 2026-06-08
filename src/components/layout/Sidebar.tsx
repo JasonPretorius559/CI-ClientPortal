@@ -13,15 +13,20 @@ const navItems = [
   { label: "Settings", to: "/settings", icon: Settings },
 ];
 
+const cloudLogo = "/cloud_no_bg.png";
+
 export function Sidebar() {
   const { user } = useAuth();
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdminUser(user));
 
   return (
    <aside className="hidden h-screen w-64 shrink-0 border-r border-ink-200 bg-white px-4 py-5 lg:flex lg:flex-col">
-      <div className="px-2">
-        <p className="text-lg font-bold tracking-tight text-ink-950">Cloud Insure</p>
-        <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
+      <div className="flex items-center gap-3 px-2">
+        <img src={cloudLogo} alt="" className="h-11 w-11 shrink-0 object-contain" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-lg font-bold tracking-tight text-ink-950">Cloud Insure</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
+        </div>
       </div>
       <nav className="mt-8 space-y-1" aria-label="Main navigation">
         {visibleItems.map((item) => {

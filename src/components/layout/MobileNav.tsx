@@ -14,6 +14,8 @@ const navItems = [
   { label: "Settings", to: "/settings" },
 ];
 
+const cloudLogo = "/cloud_no_bg.png";
+
 type MobileNavProps = {
   open: boolean;
   onClose: () => void;
@@ -30,9 +32,12 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
       <button className="absolute inset-0 bg-ink-950/40" aria-label="Close navigation" onClick={onClose} />
       <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-white p-5 shadow-xl">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-lg font-bold text-ink-950">Cloud Insure</p>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <img src={cloudLogo} alt="" className="h-10 w-10 shrink-0 object-contain" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-ink-950">Cloud Insure</p>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
+            </div>
           </div>
           <Button variant="ghost" className="px-2" aria-label="Close navigation" onClick={onClose}>
             <X className="h-5 w-5" aria-hidden="true" />
