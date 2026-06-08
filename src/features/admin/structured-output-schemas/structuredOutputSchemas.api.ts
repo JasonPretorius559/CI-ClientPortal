@@ -19,7 +19,7 @@ export async function getStructuredOutputSchema(id: string) {
     const response = await apiFetch<unknown>(`${endpoint}/${encodeURIComponent(id)}`, { method: "GET" });
     return normalizeStructuredOutputSchema(response);
   } catch (error) {
-    if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    if (!(error instanceof ApiError) || (error.status !== 400 && error.status !== 404)) throw error;
     const schemas = await listStructuredOutputSchemas();
     const match = schemas.find((schema) => getStructuredOutputSchemaId(schema) === id || schema.key === id);
     if (!match) throw error;

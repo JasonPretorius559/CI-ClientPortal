@@ -4,6 +4,9 @@ import { AdminLayout } from "../features/admin/AdminLayout";
 import { AdminMasterfileFormPage } from "../features/admin/pages/AdminMasterfileFormPage";
 import { AdminMasterfileListPage } from "../features/admin/pages/AdminMasterfileListPage";
 import { AdminSetupPage } from "../features/admin/pages/AdminSetupPage";
+import { AdminUserRegistrationPage } from "../features/admin/pages/AdminUserRegistrationPage";
+import { CaseTypePromptEditorPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptEditorPage";
+import { CaseTypePromptsPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptsPage";
 import { StructuredOutputSchemaEditorPage } from "../features/admin/structured-output-schemas/pages/StructuredOutputSchemaEditorPage";
 import { StructuredOutputSchemasPage } from "../features/admin/structured-output-schemas/pages/StructuredOutputSchemasPage";
 import { AdminRoute } from "../features/auth/AdminRoute";
@@ -18,11 +21,8 @@ import { LoginPage } from "../pages/LoginPage";
 import { NewCasePage } from "../pages/NewCasePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { ProfilePage } from "../pages/ProfilePage";
-import { RegisterPage } from "../pages/RegisterPage";
 import { SetPasswordPage } from "../pages/SetPasswordPage";
 import { SettingsPage } from "../pages/SettingsPage";
-import { ReportDesignEditorPage } from "../pages/admin/ReportDesignEditorPage";
-import { ReportDesignsPage } from "../pages/admin/ReportDesignsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 
@@ -41,9 +41,6 @@ export function AppRouter() {
         <Route element={<AuthLayout title="Welcome back" description="Sign in to manage your Cloud Insure cases." />}>
           <Route path="/login" element={<LoginPage />} />
         </Route>
-        <Route element={<AuthLayout title="Create your account" description="Register for access to your Cloud Insure user portal." />}>
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
         <Route element={<AuthLayout title="Reset your password" description="Request secure password reset instructions." />}>
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
@@ -58,10 +55,6 @@ export function AppRouter() {
           <Route path="/cases" element={<CasesPage />} />
           <Route path="/cases/new" element={<NewCasePage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
-          <Route path="/cases/:id/report-designer" element={<Navigate to="/admin/report-designs" replace />} />
-          <Route path="/reports/templates" element={<Navigate to="/admin/report-designs" replace />} />
-          <Route path="/reports/designer" element={<Navigate to="/admin/report-designs" replace />} />
-          <Route path="/reports/designer/:templateId" element={<Navigate to="/admin/report-designs" replace />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/setup" replace />} />
@@ -72,15 +65,17 @@ export function AppRouter() {
               <Route path="setup/linked-case-types" element={<AdminMasterfileListPage resourceKey="linkedCaseTypes" />} />
               <Route path="setup/linked-case-types/new" element={<AdminMasterfileFormPage resourceKey="linkedCaseTypes" />} />
               <Route path="setup/linked-case-types/:id" element={<AdminMasterfileFormPage resourceKey="linkedCaseTypes" />} />
+              <Route path="setup/case-type-prompts" element={<CaseTypePromptsPage />} />
+              <Route path="setup/case-type-prompts/new" element={<CaseTypePromptEditorPage />} />
+              <Route path="setup/case-type-prompts/:id" element={<CaseTypePromptEditorPage />} />
               <Route path="setup/entity-types" element={<AdminMasterfileListPage resourceKey="entityTypes" />} />
               <Route path="setup/entity-types/new" element={<AdminMasterfileFormPage resourceKey="entityTypes" />} />
               <Route path="setup/entity-types/:id" element={<AdminMasterfileFormPage resourceKey="entityTypes" />} />
+              <Route path="setup/users" element={<Navigate to="/admin/setup/users/new" replace />} />
+              <Route path="setup/users/new" element={<AdminUserRegistrationPage />} />
               <Route path="setup/structured-output-schemas" element={<StructuredOutputSchemasPage />} />
               <Route path="setup/structured-output-schemas/new" element={<StructuredOutputSchemaEditorPage />} />
               <Route path="setup/structured-output-schemas/:id" element={<StructuredOutputSchemaEditorPage />} />
-              <Route path="report-designs" element={<ReportDesignsPage />} />
-              <Route path="report-designs/new" element={<ReportDesignEditorPage />} />
-              <Route path="report-designs/:id" element={<ReportDesignEditorPage />} />
             </Route>
           </Route>
           <Route path="/profile" element={<ProfilePage />} />

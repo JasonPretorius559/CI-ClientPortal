@@ -26,7 +26,7 @@ import {
   publishStructuredOutputSchema,
 } from "../structuredOutputSchemas.api";
 import type { StructuredOutputSchemaStatus } from "../structuredOutputSchemas.types";
-import { getStructuredOutputSchemaId } from "../structuredOutputSchemas.utils";
+import { getStructuredOutputSchemaDatabaseId, getStructuredOutputSchemaId } from "../structuredOutputSchemas.utils";
 
 const statusOptions: Array<{ label: string; value: StructuredOutputSchemaStatus | "all" }> = [
   { label: "All statuses", value: "all" },
@@ -171,6 +171,8 @@ export function StructuredOutputSchemasPage() {
                 <tbody className="divide-y divide-ink-200">
                   {filteredSchemas.map((schema) => {
                     const id = getStructuredOutputSchemaId(schema);
+                    const databaseId = getStructuredOutputSchemaDatabaseId(schema);
+                    const canMutateSchema = schema.source !== "code" && Boolean(databaseId);
                     return (
                       <tr key={id}>
                         <td className="max-w-xs px-4 py-4 font-medium text-ink-950">{schema.name}</td>
@@ -183,18 +185,20 @@ export function StructuredOutputSchemasPage() {
                         <td className="px-4 py-4 text-ink-600">{formatDate(schema.updatedAt)}</td>
                         <td className="px-4 py-4">
                           <div className="flex justify-end gap-2">
-                            <Button asChild variant="secondary" className="px-3">
-                              <Link to={`/admin/setup/structured-output-schemas/${encodeURIComponent(id)}`} aria-label={`Edit ${schema.name}`}>
-                                <PencilLine className="h-4 w-4" aria-hidden="true" />
-                              </Link>
-                            </Button>
-                            {schema.status === "draft" ? (
-                              <Button variant="secondary" className="px-3" disabled={publishMutation.isPending} isLoading={publishMutation.isPending} onClick={() => publishMutation.mutate(id)}>
+                            {canMutateSchema ? (
+                              <Button asChild variant="secondary" className="px-3">
+                                <Link to={`/admin/setup/structured-output-schemas/${encodeURIComponent(databaseId)}`} aria-label={`Edit ${schema.name}`}>
+                                  <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                </Link>
+                              </Button>
+                            ) : null}
+                            {canMutateSchema && schema.status === "draft" ? (
+                              <Button variant="secondary" className="px-3" disabled={publishMutation.isPending} isLoading={publishMutation.isPending} onClick={() => publishMutation.mutate(databaseId)}>
                                 <UploadCloud className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             ) : null}
-                            {schema.status !== "archived" ? (
-                              <Button variant="secondary" className="px-3" disabled={archiveMutation.isPending} isLoading={archiveMutation.isPending} onClick={() => archiveMutation.mutate(id)}>
+                            {canMutateSchema && schema.status !== "archived" ? (
+                              <Button variant="secondary" className="px-3" disabled={archiveMutation.isPending} isLoading={archiveMutation.isPending} onClick={() => archiveMutation.mutate(databaseId)}>
                                 <Archive className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             ) : null}

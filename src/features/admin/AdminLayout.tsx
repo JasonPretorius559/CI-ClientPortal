@@ -1,10 +1,9 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { PanelsTopLeft, Settings2 } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 const adminTabs = [
   { label: "Setup", to: "/admin/setup", icon: Settings2 },
-  { label: "Report Designs", to: "/admin/report-designs", icon: PanelsTopLeft },
 ];
 
 export function AdminLayout() {

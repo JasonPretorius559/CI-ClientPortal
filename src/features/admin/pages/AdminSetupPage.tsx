@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Database, FileJson2, PanelsTopLeft } from "lucide-react";
+import { Database, FileJson2, MessageSquareText, UserPlus } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/Card";
 import { PageHeader } from "../../../components/ui/PageHeader";
@@ -20,6 +20,12 @@ const setupCards = [
     icon: Database,
   },
   {
+    title: "Case Type Prompts",
+    description: "Manage OpenAI analysis prompts by case type and linked case type.",
+    to: "/admin/setup/case-type-prompts",
+    icon: MessageSquareText,
+  },
+  {
     title: adminMasterfileConfigs.entityTypes.label,
     description: adminMasterfileConfigs.entityTypes.description,
     to: "/admin/setup/entity-types",
@@ -32,10 +38,10 @@ const setupCards = [
     icon: FileJson2,
   },
   {
-    title: "Report Designs",
-    description: "Manage admin report layouts and field bindings.",
-    to: "/admin/report-designs",
-    icon: PanelsTopLeft,
+    title: "Users",
+    description: "Register portal users from the admin masterfiles area.",
+    to: "/admin/setup/users/new",
+    icon: UserPlus,
   },
 ];
 
@@ -45,7 +51,7 @@ export function AdminSetupPage() {
       <div className="space-y-6">
         <PageHeader
           title="Admin Setup"
-          description="Manage the masterfile data that powers case routing, structured analysis, and report design."
+          description="Manage the masterfile data that powers case routing, structured analysis, and user access."
         />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

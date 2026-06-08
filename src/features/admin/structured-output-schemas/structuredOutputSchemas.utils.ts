@@ -83,6 +83,16 @@ export function getStructuredOutputSchemaId(schema: Pick<StructuredOutputSchema,
   return schema.id ?? schema._id ?? schema.key;
 }
 
+export function isObjectIdString(value: string | undefined) {
+  return Boolean(value && /^[a-f\d]{24}$/i.test(value));
+}
+
+export function getStructuredOutputSchemaDatabaseId(schema: Pick<StructuredOutputSchema, "id" | "_id">) {
+  if (isObjectIdString(schema.id)) return schema.id ?? "";
+  if (isObjectIdString(schema._id)) return schema._id ?? "";
+  return "";
+}
+
 export function stringifyJsonSchema(value: unknown) {
   return JSON.stringify(value && isRecord(value) ? value : starterJsonSchema, null, 2);
 }

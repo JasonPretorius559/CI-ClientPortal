@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { Alert } from "../../components/ui/Alert";
 import { Button } from "../../components/ui/Button";
@@ -10,16 +9,14 @@ import { TextField } from "../../components/forms/TextField";
 import { ApiError } from "../../lib/api";
 import * as authApi from "./auth.api";
 import { registerSchema, type RegisterInput } from "./auth.schemas";
-import { useAuth } from "./useAuth";
-import { normalizeAuthUser } from "./auth.utils";
 
 export function RegisterForm() {
-  const navigate = useNavigate();
-  const { setUser } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -35,19 +32,11 @@ export function RegisterForm() {
 
   async function onSubmit(values: RegisterInput) {
     setFormError(null);
+    setSuccessMessage(null);
     try {
       await authApi.register(values);
-      try {
-        const user = normalizeAuthUser(await authApi.getMe());
-        if (user) {
-          setUser(user);
-          navigate("/dashboard", { replace: true });
-          return;
-        }
-      } catch {
-        setUser(null);
-      }
-      navigate("/login?registered=1", { replace: true });
+      reset();
+      setSuccessMessage("User registered successfully.");
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Unable to register right now.");
     }
@@ -55,6 +44,7 @@ export function RegisterForm() {
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+      {successMessage ? <Alert tone="success">{successMessage}</Alert> : null}
       {formError ? <Alert tone="error">{formError}</Alert> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField label="First name" autoComplete="given-name" error={errors.firstName?.message} {...register("firstName")} />
@@ -66,11 +56,8 @@ export function RegisterForm() {
       <PasswordField label="Confirm password" autoComplete="new-password" error={errors.confirmPassword?.message} {...register("confirmPassword")} />
       <Button type="submit" className="w-full" isLoading={isSubmitting}>
         <UserPlus className="h-4 w-4" aria-hidden="true" />
-        Register
+        Create User
       </Button>
-      <p className="text-center text-sm text-ink-600">
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
     </form>
   );
 }

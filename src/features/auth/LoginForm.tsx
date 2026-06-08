@@ -49,7 +49,6 @@ export function LoginForm() {
       </Button>
       <div className="flex flex-wrap justify-between gap-3 text-sm">
         <Link to="/forgot-password">Forgot password?</Link>
-        <Link to="/register">Create one</Link>
       </div>
     </form>
   );

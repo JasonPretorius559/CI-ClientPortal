@@ -26,7 +26,13 @@ import {
   updateStructuredOutputSchema,
 } from "../structuredOutputSchemas.api";
 import type { SaveStructuredOutputSchemaInput, StructuredOutputSchemaStatus } from "../structuredOutputSchemas.types";
-import { getStructuredOutputSchemaId, starterJsonSchema, stringifyJsonSchema } from "../structuredOutputSchemas.utils";
+import {
+  getStructuredOutputSchemaDatabaseId,
+  getStructuredOutputSchemaId,
+  isObjectIdString,
+  starterJsonSchema,
+  stringifyJsonSchema,
+} from "../structuredOutputSchemas.utils";
 
 type FormState = {
   name: string;
@@ -94,6 +100,10 @@ export function StructuredOutputSchemaEditorPage() {
     queryFn: () => getStructuredOutputSchemaFields(form.key),
     enabled: Boolean(form.key && isEditing),
   });
+  const routeDatabaseId = isObjectIdString(id) ? id ?? "" : "";
+  const schemaDatabaseId = schemaQuery.data ? getStructuredOutputSchemaDatabaseId(schemaQuery.data) : "";
+  const editableSchemaId = schemaDatabaseId || routeDatabaseId;
+  const canEditCurrentSchema = !isEditing || Boolean(editableSchemaId);
 
   useEffect(() => {
     if (!schemaQuery.data) {
@@ -149,7 +159,11 @@ export function StructuredOutputSchemaEditorPage() {
       setFormError("");
       setJsonError("");
       const payload = buildPayload("draft");
-      return isEditing && id ? updateStructuredOutputSchema(id, payload) : createStructuredOutputSchema(payload);
+      if (isEditing) {
+        if (!editableSchemaId) throw new Error("Only database-backed draft schemas can be edited.");
+        return updateStructuredOutputSchema(editableSchemaId, payload);
+      }
+      return createStructuredOutputSchema(payload);
     },
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "structured-output-schemas"] });
@@ -169,8 +183,9 @@ export function StructuredOutputSchemaEditorPage() {
     mutationFn: async () => {
       setFormError("");
       setJsonError("");
-      const saved = isEditing && id
-        ? await updateStructuredOutputSchema(id, buildPayload("draft"))
+      if (isEditing && !editableSchemaId) throw new Error("Only database-backed draft schemas can be published.");
+      const saved = isEditing
+        ? await updateStructuredOutputSchema(editableSchemaId, buildPayload("draft"))
         : await createStructuredOutputSchema(buildPayload("draft"));
       return publishStructuredOutputSchema(getStructuredOutputSchemaId(saved));
     },
@@ -212,11 +227,11 @@ export function StructuredOutputSchemaEditorPage() {
           action={(
             <>
               <Button asChild variant="secondary"><Link to="/admin/setup/structured-output-schemas">Cancel</Link></Button>
-              <Button type="button" isLoading={saveMutation.isPending} disabled={isPublished} onClick={() => saveMutation.mutate()}>
+              <Button type="button" isLoading={saveMutation.isPending} disabled={isPublished || !canEditCurrentSchema} onClick={() => saveMutation.mutate()}>
                 <Save className="h-4 w-4" aria-hidden="true" />
                 Save Draft
               </Button>
-              <Button type="button" isLoading={publishMutation.isPending} disabled={isPublished} onClick={() => publishMutation.mutate()}>
+              <Button type="button" isLoading={publishMutation.isPending} disabled={isPublished || !canEditCurrentSchema} onClick={() => publishMutation.mutate()}>
                 <UploadCloud className="h-4 w-4" aria-hidden="true" />
                 Publish
               </Button>

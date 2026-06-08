@@ -10,7 +10,6 @@ const navItems = [
   { label: "My Cases", to: "/cases" },
   { label: "New Case", to: "/cases/new" },
   { label: "Admin Setup", to: "/admin/setup", adminOnly: true },
-  { label: "Report Designs", to: "/admin/report-designs", adminOnly: true },
   { label: "Profile", to: "/profile" },
   { label: "Settings", to: "/settings" },
 ];
