@@ -5,6 +5,7 @@ import { MobileNav } from "../components/layout/MobileNav";
 import { Sidebar } from "../components/layout/Sidebar";
 import { UserMenu } from "../components/layout/UserMenu";
 import { Button } from "../components/ui/Button";
+import { GlobalAnalysisProgressBanner } from "../features/cases/GlobalAnalysisProgressBanner";
 
 export function PortalLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -43,6 +44,8 @@ export function PortalLayout() {
           </div>
         </main>
       </div>
+
+      <GlobalAnalysisProgressBanner />
     </div>
   );
 }
