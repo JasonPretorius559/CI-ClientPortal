@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Bot,
   CheckCircle2,
-  Clock,
   Download,
   FileWarning,
   Play,
@@ -25,6 +24,19 @@ import { ApiError } from "../../lib/api";
 import { useToast } from "../../components/ui/toast-context";
 import { generateCaseReport } from "../reports/reports.api";
 import { downloadBlob } from "../reports/reportExport";
+import { AnalysisProgressCard } from "./AnalysisProgressCard";
+import {
+  getActiveAnalysisProgress,
+  type ActiveAnalysisProgress,
+} from "./analysisProgress.api";
+import {
+  getFailureMessage,
+  getProgressMessage,
+  isActiveAnalysisStatus,
+  isCompletedAnalysisStatus,
+  parseCaseAnalysisStatus,
+  type CaseAnalysisStatusDetail,
+} from "./analysisStatus.utils";
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import {
   analyzeCase,
@@ -35,27 +47,7 @@ import {
 } from "./cases.api";
 import { getCaseStatus, getCaseTitle, readCaseField } from "./cases.utils";
 
-const activeAnalysisStatuses = new Set(["queued", "running"]);
 const reportReadyAnalysisStatuses = new Set(["completed", "completed_with_warnings"]);
-
-const queuedMessages = [
-  "Preparing analysis...",
-  "Waiting for an available AI worker...",
-  "Queueing document processing...",
-];
-
-const runningMessages = [
-  "Reading policy document...",
-  "Reviewing client information...",
-  "Evaluating coverage...",
-  "Checking exclusions...",
-  "Finding missing information...",
-  "Calculating confidence score...",
-  "Calculating satisfaction score...",
-  "Generating recommendations...",
-  "Creating analysis version...",
-  "Finalizing report...",
-];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -129,14 +121,19 @@ function getDownloadHref(downloadUrl: string) {
     : `${apiBaseUrl}${downloadUrl}`;
 }
 
-function statusFromPayload(payload: unknown) {
-  const data =
-    isRecord(payload) && isRecord(payload.data) ? payload.data : payload;
-  return (
-    toDisplayValue(
-      isRecord(data) ? (data.openAiAnalysisStatus ?? data.status) : "",
-    ).toLowerCase() || "not_started"
-  );
+function mergeCaseProgressDetail(
+  detail: CaseAnalysisStatusDetail,
+  activeProgress: ActiveAnalysisProgress | undefined,
+): CaseAnalysisStatusDetail {
+  if (!activeProgress) return detail;
+
+  return {
+    ...detail,
+    progress: activeProgress.progress ?? detail.progress,
+    stage: activeProgress.stage ?? detail.stage,
+    message: activeProgress.message || detail.message,
+    error: activeProgress.analysisError || detail.error,
+  };
 }
 
 function dataRecord(payload: unknown) {
@@ -291,60 +288,64 @@ function MetricCard({ label, value }: { label: string; value: unknown }) {
 }
 
 function AnalysisBanner({
-  status,
+  detail,
   duplicate,
   insufficientCredits,
 }: {
-  status: string;
+  detail: CaseAnalysisStatusDetail;
   duplicate: boolean;
   insufficientCredits: boolean;
 }) {
+  const status = detail.status;
+  const failureMessage = getFailureMessage(detail);
+  const progressMessage = getProgressMessage(detail);
+
   const state = insufficientCredits
     ? {
-        title: "Analysis limit reached.",
+        title: "Analysis limit reached",
         message: "Please purchase more analysis credits to continue.",
         tone: "error" as const,
         Icon: AlertTriangle,
       }
     : duplicate
       ? {
-          title: "Existing completed analysis reused.",
-          message: "No new analysis job was queued.",
+          title: "Existing analysis reused",
+          message: "No new analysis job was queued because this input was already analysed.",
           tone: "success" as const,
           Icon: CheckCircle2,
         }
-      : status === "queued"
+      : detail.documentExtraction?.stage === "failed"
         ? {
-            title: "Preparing Analysis",
-            message: "Your case is waiting for an AI worker.",
-            tone: "info" as const,
-            Icon: Clock,
+            title: "Document preparation failed",
+            message: failureMessage,
+            tone: "error" as const,
+            Icon: FileWarning,
           }
-        : status === "running"
+        : status === "failed"
           ? {
-              title: "AI Analysis In Progress",
-              message:
-                "Reviewing policy information and generating recommendations.",
-              tone: "info" as const,
-              Icon: Bot,
+              title: "Analysis failed",
+              message: failureMessage,
+              tone: "error" as const,
+              Icon: AlertTriangle,
             }
-          : status === "completed"
+          : isCompletedAnalysisStatus(status)
             ? {
-                title: "Analysis Complete",
-                message: "Latest analysis version ready.",
-                tone: "success" as const,
-                Icon: CheckCircle2,
+                title: detail.needsInput ? "Analysis complete with follow-up needed" : "Analysis complete",
+                message: detail.message || "Latest analysis version is ready.",
+                tone: detail.needsInput ? ("info" as const) : ("success" as const),
+                Icon: detail.needsInput ? AlertTriangle : CheckCircle2,
               }
-            : status === "failed"
+            : isActiveAnalysisStatus(status)
               ? {
-                  title: "Analysis Failed",
-                  message: "Please review logs and retry.",
-                  tone: "error" as const,
-                  Icon: AlertTriangle,
+                  title: "Analysis in progress",
+                  message: progressMessage,
+                  tone: "info" as const,
+                  Icon: Bot,
                 }
               : {
-                  title: "No active analysis",
+                  title: "Ready for analysis",
                   message:
+                    detail.documentExtraction?.message ||
                     "Run analysis when this case is ready for AI review.",
                   tone: "info" as const,
                   Icon: Sparkles,
@@ -358,52 +359,12 @@ function AnalysisBanner({
         <div>
           <p className="text-base font-semibold">{state.title}</p>
           <p className="mt-1 text-sm">{state.message}</p>
+          {detail.error && status === "failed" ? (
+            <p className="mt-2 rounded-md bg-white/70 p-2 text-xs text-ink-700">{detail.error}</p>
+          ) : null}
         </div>
       </div>
     </Alert>
-  );
-}
-
-function ThinkingCard({ status }: { status: string }) {
-  const messages =
-    status === "queued"
-      ? queuedMessages
-      : status === "running"
-        ? runningMessages
-        : [];
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-    if (!messages.length) return undefined;
-    const interval = window.setInterval(
-      () => setIndex((current) => (current + 1) % messages.length),
-      4000,
-    );
-    return () => window.clearInterval(interval);
-  }, [messages.length, status]);
-
-  if (!messages.length) return null;
-
-  return (
-    <Card className="rounded-xl">
-      <CardContent>
-        <div className="flex items-center gap-4">
-          <div className="grid h-11 w-11 place-items-center rounded-lg border border-ink-200 bg-ink-50">
-            <Bot className="h-5 w-5 animate-pulse" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-ink-950">
-              AI analysis in progress
-            </p>
-            <p className="mt-1 text-sm text-ink-600">
-              {messages[index]}
-              <span className="inline-block w-6 animate-pulse">...</span>
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -660,6 +621,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [inputHash, setInputHash] = useState("");
   const [model, setModel] = useState("");
+  const lastNotifiedStatusRef = useRef<string | null>(null);
 
   const files = getFiles(caseItem);
   const caseId = readDisplay(caseItem, ["caseId", "CaseId", "id", "_id"]);
@@ -696,7 +658,13 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     queryKey: ["case-analysis-status", caseId],
     queryFn: () => getCaseAnalysisStatus(caseId),
     enabled: Boolean(caseId),
-    refetchInterval: pollingEnabled ? 5000 : false,
+    refetchInterval: pollingEnabled ? 4000 : false,
+  });
+  const activeProgressQuery = useQuery({
+    queryKey: ["analysis-progress", "active"],
+    queryFn: getActiveAnalysisProgress,
+    enabled: Boolean(caseId) && pollingEnabled,
+    refetchInterval: pollingEnabled ? 4000 : false,
   });
   const versionsQuery = useQuery({
     queryKey: ["case-analysis-versions", caseId],
@@ -717,8 +685,13 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const selectedVersion =
     versions.find((version) => version.analysisId === selectedVersionId) ??
     current;
-  const analysisStatus = statusFromPayload(statusQuery.data);
-  const running = activeAnalysisStatuses.has(analysisStatus) || pollingEnabled;
+  const analysisDetail = useMemo(() => {
+    const parsed = parseCaseAnalysisStatus(statusQuery.data);
+    const activeForCase = (activeProgressQuery.data ?? []).find((item) => item.caseId === caseId);
+    return mergeCaseProgressDetail(parsed, activeForCase);
+  }, [activeProgressQuery.data, caseId, statusQuery.data]);
+  const analysisStatus = analysisDetail.status;
+  const running = isActiveAnalysisStatus(analysisStatus) || pollingEnabled;
   const logs = arrayFromPayload(logsQuery.data, [
     "timeline",
     "logs",
@@ -732,12 +705,38 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   useEffect(() => {
     if (!pollingEnabled) return;
-    if (reportReadyAnalysisStatuses.has(analysisStatus) || analysisStatus === "failed") {
+    if (isCompletedAnalysisStatus(analysisStatus) || analysisStatus === "failed") {
       setPollingEnabled(false);
       void versionsQuery.refetch();
       void logsQuery.refetch();
     }
   }, [analysisStatus, logsQuery, pollingEnabled, versionsQuery]);
+
+  useEffect(() => {
+    if (!pollingEnabled) return;
+
+    const notificationKey = `${analysisStatus}:${analysisDetail.error ?? ""}`;
+    if (lastNotifiedStatusRef.current === notificationKey) return;
+
+    if (isCompletedAnalysisStatus(analysisStatus)) {
+      lastNotifiedStatusRef.current = notificationKey;
+      showToast({
+        tone: "success",
+        title: analysisDetail.needsInput
+          ? "Analysis finished, but more information may be needed."
+          : "Analysis completed successfully.",
+      });
+      return;
+    }
+
+    if (analysisStatus === "failed" || analysisDetail.documentExtraction?.stage === "failed") {
+      lastNotifiedStatusRef.current = notificationKey;
+      showToast({
+        tone: "error",
+        title: getFailureMessage(analysisDetail),
+      });
+    }
+  }, [analysisDetail, analysisStatus, pollingEnabled, showToast]);
 
   const analyzeMutation = useMutation({
     mutationFn: () => analyzeCase({ caseId, inputHash, model }),
@@ -843,7 +842,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       </Card>
 
       <AnalysisBanner
-        status={analysisStatus}
+        detail={analysisDetail}
         duplicate={duplicateReused}
         insufficientCredits={insufficientCredits}
       />
@@ -854,7 +853,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
             : "Unable to run analysis."}
         </Alert>
       ) : null}
-      <ThinkingCard status={analysisStatus} />
+      <AnalysisProgressCard detail={analysisDetail} active={running} />
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
         <main className="min-w-0 space-y-6">

@@ -57,6 +57,8 @@ export type ActiveAnalysisProgress = {
   queuedAt: string | null;
   startedAt: string | null;
   updatedAt: string | null;
+  analysisError: string | null;
+  extractionFailed: boolean;
 };
 
 function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
@@ -83,6 +85,8 @@ function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
     queuedAt: readString(item, ["queuedAt", "createdAt"]) || null,
     startedAt: readString(item, ["startedAt"]) || null,
     updatedAt: readString(item, ["updatedAt"]) || null,
+    analysisError: readString(item, ["analysisError", "lastError", "error"]) || null,
+    extractionFailed: item.extractionFailed === true,
   };
 }
 
