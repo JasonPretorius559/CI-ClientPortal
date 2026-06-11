@@ -37,7 +37,7 @@ export async function updateStructuredOutputSchema(id: string, payload: SaveStru
   return normalizeStructuredOutputSchema(response);
 }
 
-export function archiveStructuredOutputSchema(id: string) {
+export function deleteStructuredOutputSchema(id: string) {
   return apiFetch<unknown>(`${endpoint}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 

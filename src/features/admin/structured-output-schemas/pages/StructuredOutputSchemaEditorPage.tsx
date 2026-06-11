@@ -136,6 +136,8 @@ export function StructuredOutputSchemaEditorPage() {
   const buildPayload = (status?: StructuredOutputSchemaStatus): SaveStructuredOutputSchemaInput => {
     if (!form.name.trim()) throw new Error("Name is required.");
     if (!form.key.trim()) throw new Error("Key is required.");
+    if (!form.caseType.trim()) throw new Error("Case type is required.");
+    if (!form.linkedCaseType.trim()) throw new Error("Linked case type is required.");
     const version = Number(form.version);
     if (!Number.isFinite(version) || version < 1) throw new Error("Version must be a positive number.");
 
@@ -144,8 +146,8 @@ export function StructuredOutputSchemaEditorPage() {
       key: form.key.trim(),
       description: form.description.trim(),
       version,
-      caseType: form.caseType || undefined,
-      linkedCaseType: form.linkedCaseType || undefined,
+      caseType: form.caseType,
+      linkedCaseType: form.linkedCaseType,
       status: status ?? form.status,
       isActive: form.isActive,
       jsonSchema: parseJsonSchema(form.jsonSchemaText),
@@ -272,14 +274,14 @@ export function StructuredOutputSchemaEditorPage() {
                     value={form.caseType}
                     disabled={isPublished || caseTypesQuery.isLoading}
                     onChange={(event) => setForm((current) => ({ ...current, caseType: event.target.value, linkedCaseType: "" }))}
-                    options={[{ label: "Any case type", value: "" }, ...(caseTypesQuery.data ?? []).map((item) => ({ label: item.name, value: getRecordId(item) }))]}
+                    options={[{ label: "Select case type", value: "" }, ...(caseTypesQuery.data ?? []).map((item) => ({ label: item.name, value: getRecordId(item) }))]}
                   />
                   <SelectField
                     label="Linked Case Type"
                     value={form.linkedCaseType}
-                    disabled={isPublished || linkedCaseTypesQuery.isLoading}
+                    disabled={isPublished || linkedCaseTypesQuery.isLoading || !form.caseType}
                     onChange={(event) => setForm((current) => ({ ...current, linkedCaseType: event.target.value }))}
-                    options={[{ label: "Any linked case type", value: "" }, ...linkedCaseTypeOptions]}
+                    options={[{ label: form.caseType ? "Select linked case type" : "Select a case type first", value: "" }, ...linkedCaseTypeOptions]}
                   />
                 </div>
                 <label className="flex items-center gap-3 rounded-md border border-ink-200 bg-ink-50 px-3 py-3 text-sm font-medium text-ink-800">

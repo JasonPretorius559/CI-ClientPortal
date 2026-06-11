@@ -24,7 +24,7 @@ export type StructuredOutputSchema = {
   linkedCaseTypeNameSnapshot?: string;
   status: StructuredOutputSchemaStatus;
   isActive: boolean;
-  source?: "admin" | "code";
+  source?: "admin";
   jsonSchema?: Record<string, unknown>;
   fields?: StructuredOutputSchemaField[];
   tree?: unknown[];
@@ -40,8 +40,8 @@ export type SaveStructuredOutputSchemaInput = {
   key: string;
   description?: string;
   version: number;
-  caseType?: string;
-  linkedCaseType?: string;
+  caseType: string;
+  linkedCaseType: string;
   status?: StructuredOutputSchemaStatus;
   isActive: boolean;
   jsonSchema: Record<string, unknown>;

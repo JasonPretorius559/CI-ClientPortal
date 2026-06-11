@@ -56,7 +56,7 @@ export function normalizeStructuredOutputSchema(payload: unknown): StructuredOut
     linkedCaseTypeNameSnapshot: readString(container, ["linkedCaseTypeNameSnapshot"]) || undefined,
     status: readStatus(container),
     isActive: readBoolean(container, ["isActive", "active"], true),
-    source: readString(container, ["source"]) === "code" ? "code" : "admin",
+    source: "admin",
     jsonSchema: isRecord(container.jsonSchema) ? container.jsonSchema : isRecord(container.schema) ? container.schema : undefined,
     fields,
     tree: readArrayFromPayload(container, ["tree", "fieldTree"]),

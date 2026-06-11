@@ -20,7 +20,7 @@ import { adminMasterfileConfigs } from "../../adminMasterfile.config";
 import { getRecordId } from "../../adminPayload.utils";
 import { SchemaFieldsPreview } from "../components/SchemaFieldsPreview";
 import {
-  archiveStructuredOutputSchema,
+  deleteStructuredOutputSchema,
   getStructuredOutputSchemaFields,
   listStructuredOutputSchemas,
   publishStructuredOutputSchema,
@@ -68,8 +68,8 @@ export function StructuredOutputSchemasPage() {
     onError: (error) => showToast({ tone: "error", title: error instanceof Error ? error.message : "Unable to publish this schema." }),
   });
 
-  const archiveMutation = useMutation({
-    mutationFn: archiveStructuredOutputSchema,
+  const deleteMutation = useMutation({
+    mutationFn: deleteStructuredOutputSchema,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "structured-output-schemas"] });
       showToast({ tone: "success", title: "Schema deleted." });
@@ -172,7 +172,7 @@ export function StructuredOutputSchemasPage() {
                   {filteredSchemas.map((schema) => {
                     const id = getStructuredOutputSchemaId(schema);
                     const databaseId = getStructuredOutputSchemaDatabaseId(schema);
-                    const canMutateSchema = schema.source !== "code" && Boolean(databaseId);
+                    const canMutateSchema = Boolean(databaseId);
                     return (
                       <tr key={id}>
                         <td className="max-w-xs px-4 py-4 font-medium text-ink-950">{schema.name}</td>
@@ -202,10 +202,10 @@ export function StructuredOutputSchemasPage() {
                                 variant="danger"
                                 className="px-3"
                                 aria-label={`Delete ${schema.name}`}
-                                disabled={archiveMutation.isPending}
-                                isLoading={archiveMutation.isPending}
+                                disabled={deleteMutation.isPending}
+                                isLoading={deleteMutation.isPending}
                                 onClick={() => {
-                                  if (window.confirm(`Delete ${schema.name}?`)) archiveMutation.mutate(databaseId);
+                                  if (window.confirm(`Delete ${schema.name}?`)) deleteMutation.mutate(databaseId);
                                 }}
                               >
                                 <Trash2 className="h-4 w-4" aria-hidden="true" />
