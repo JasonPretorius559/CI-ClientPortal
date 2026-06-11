@@ -39,8 +39,8 @@ const setupCards = [
   },
   {
     title: "Users",
-    description: "Register portal users from the admin masterfiles area.",
-    to: "/admin/setup/users/new",
+    description: "Manage portal users, roles, statuses, and account access.",
+    to: "/admin/setup/users",
     icon: UserPlus,
   },
 ];

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, FilePlus2, PencilLine } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -29,6 +30,13 @@ export function AdminMasterfileListPage({ resourceKey }: AdminMasterfileListPage
     queryFn: () => listAdminMasterfileRecords(config),
   });
 
+  const caseTypesConfig = getAdminMasterfileConfig("caseTypes");
+  const caseTypesQuery = useQuery({
+    queryKey: ["admin", "masterfiles", "caseTypes", "lookup"],
+    queryFn: () => listAdminMasterfileRecords(caseTypesConfig),
+    enabled: Boolean(config.requiresCaseType),
+  });
+
   const archiveMutation = useMutation({
     mutationFn: (id: string) => archiveAdminMasterfileRecord(config, id),
     onSuccess: () => {
@@ -41,6 +49,9 @@ export function AdminMasterfileListPage({ resourceKey }: AdminMasterfileListPage
   });
 
   const records = recordsQuery.data ?? [];
+  const caseTypeNameById = useMemo(() => {
+    return new Map((caseTypesQuery.data ?? []).map((caseType) => [getRecordId(caseType), caseType.name]));
+  }, [caseTypesQuery.data]);
 
   return (
     <AdminPageAccess>
@@ -107,10 +118,11 @@ export function AdminMasterfileListPage({ resourceKey }: AdminMasterfileListPage
                 <tbody className="divide-y divide-ink-200">
                   {records.map((record) => {
                     const id = getRecordId(record);
+                    const caseTypeName = record.caseTypeName || (record.caseType ? caseTypeNameById.get(record.caseType) : "") || "None";
                     return (
                       <tr key={id || record.name}>
                         <td className="max-w-xs px-4 py-4 font-medium text-ink-950">{record.name || "Untitled"}</td>
-                        {config.requiresCaseType ? <td className="px-4 py-4 text-ink-700">{record.caseTypeName || record.caseType || "None"}</td> : null}
+                        {config.requiresCaseType ? <td className="px-4 py-4 text-ink-700">{caseTypeName}</td> : null}
                         <td className="max-w-md px-4 py-4 text-ink-600">{record.description || "No description provided."}</td>
                         <td className="px-4 py-4">
                           <Badge tone={record.isActive === false ? "dashed" : "outline"}>{record.isActive === false ? "Inactive" : "Active"}</Badge>

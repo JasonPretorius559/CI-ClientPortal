@@ -5,6 +5,7 @@ import { AdminMasterfileFormPage } from "../features/admin/pages/AdminMasterfile
 import { AdminMasterfileListPage } from "../features/admin/pages/AdminMasterfileListPage";
 import { AdminSetupPage } from "../features/admin/pages/AdminSetupPage";
 import { AdminUserRegistrationPage } from "../features/admin/pages/AdminUserRegistrationPage";
+import { AdminUsersPage } from "../features/admin/pages/AdminUsersPage";
 import { CaseTypePromptEditorPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptEditorPage";
 import { CaseTypePromptsPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptsPage";
 import { StructuredOutputSchemaEditorPage } from "../features/admin/structured-output-schemas/pages/StructuredOutputSchemaEditorPage";
@@ -71,7 +72,7 @@ export function AppRouter() {
               <Route path="setup/entity-types" element={<AdminMasterfileListPage resourceKey="entityTypes" />} />
               <Route path="setup/entity-types/new" element={<AdminMasterfileFormPage resourceKey="entityTypes" />} />
               <Route path="setup/entity-types/:id" element={<AdminMasterfileFormPage resourceKey="entityTypes" />} />
-              <Route path="setup/users" element={<Navigate to="/admin/setup/users/new" replace />} />
+              <Route path="setup/users" element={<AdminUsersPage />} />
               <Route path="setup/users/new" element={<AdminUserRegistrationPage />} />
               <Route path="setup/structured-output-schemas" element={<StructuredOutputSchemasPage />} />
               <Route path="setup/structured-output-schemas/new" element={<StructuredOutputSchemaEditorPage />} />
