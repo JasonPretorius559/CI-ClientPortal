@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, FilePlus2, PencilLine } from "lucide-react";
+import { FilePlus2, PencilLine, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Alert } from "../../../../components/ui/Alert";
 import { Badge } from "../../../../components/ui/Badge";
@@ -37,7 +37,7 @@ export function CaseTypePromptsPage() {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "case-type-prompts"],
       });
-      showToast({ tone: "success", title: "Case type prompt archived." });
+      showToast({ tone: "success", title: "Case type prompt deleted." });
     },
     onError: (error) => {
       showToast({
@@ -45,7 +45,7 @@ export function CaseTypePromptsPage() {
         title:
           error instanceof Error
             ? error.message
-            : "Unable to archive this prompt.",
+            : "Unable to delete this prompt.",
       });
     },
   });
@@ -111,7 +111,7 @@ export function CaseTypePromptsPage() {
               <Alert tone="error" className="m-4">
                 {deleteMutation.error instanceof Error
                   ? deleteMutation.error.message
-                  : "Unable to archive this prompt."}
+                  : "Unable to delete this prompt."}
               </Alert>
             ) : null}
             <div className="overflow-x-auto">
@@ -170,21 +170,21 @@ export function CaseTypePromptsPage() {
                               </Link>
                             </Button>
                             <Button
-                              variant="secondary"
+                              variant="danger"
                               className="px-3"
-                              aria-label="Archive case type prompt"
+                              aria-label="Delete case type prompt"
                               disabled={!id || deleteMutation.isPending}
                               isLoading={deleteMutation.isPending}
                               onClick={() => {
                                 if (
                                   window.confirm(
-                                    "Archive this case type prompt?",
+                                    "Delete this case type prompt?",
                                   )
                                 )
                                   deleteMutation.mutate(id);
                               }}
                             >
-                              <Archive className="h-4 w-4" aria-hidden="true" />
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
                             </Button>
                           </div>
                         </td>

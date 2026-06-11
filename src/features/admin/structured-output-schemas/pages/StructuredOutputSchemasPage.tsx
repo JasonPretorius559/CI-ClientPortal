@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, Eye, FilePlus2, PencilLine, UploadCloud } from "lucide-react";
+import { Eye, FilePlus2, PencilLine, Trash2, UploadCloud } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SelectField } from "../../../../components/forms/SelectField";
 import { TextField } from "../../../../components/forms/TextField";
@@ -72,9 +72,9 @@ export function StructuredOutputSchemasPage() {
     mutationFn: archiveStructuredOutputSchema,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "structured-output-schemas"] });
-      showToast({ tone: "success", title: "Schema archived." });
+      showToast({ tone: "success", title: "Schema deleted." });
     },
-    onError: (error) => showToast({ tone: "error", title: error instanceof Error ? error.message : "Unable to archive this schema." }),
+    onError: (error) => showToast({ tone: "error", title: error instanceof Error ? error.message : "Unable to delete this schema." }),
   });
 
   const caseTypes = caseTypesQuery.data ?? [];
@@ -197,9 +197,18 @@ export function StructuredOutputSchemasPage() {
                                 <UploadCloud className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             ) : null}
-                            {canMutateSchema && schema.status !== "archived" ? (
-                              <Button variant="secondary" className="px-3" disabled={archiveMutation.isPending} isLoading={archiveMutation.isPending} onClick={() => archiveMutation.mutate(databaseId)}>
-                                <Archive className="h-4 w-4" aria-hidden="true" />
+                            {canMutateSchema ? (
+                              <Button
+                                variant="danger"
+                                className="px-3"
+                                aria-label={`Delete ${schema.name}`}
+                                disabled={archiveMutation.isPending}
+                                isLoading={archiveMutation.isPending}
+                                onClick={() => {
+                                  if (window.confirm(`Delete ${schema.name}?`)) archiveMutation.mutate(databaseId);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             ) : null}
                             <Button variant="secondary" className="px-3" onClick={() => setFieldsSchemaKey(schema.key)}>
