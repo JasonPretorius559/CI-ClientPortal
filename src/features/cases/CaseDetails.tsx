@@ -133,6 +133,9 @@ function mergeCaseProgressDetail(
     stage: activeProgress.stage ?? detail.stage,
     message: activeProgress.message || detail.message,
     error: activeProgress.analysisError || detail.error,
+    completedChunks: activeProgress.completedChunks,
+    totalChunks: activeProgress.totalChunks,
+    currentChunkIndex: activeProgress.currentChunkIndex,
   };
 }
 

@@ -59,6 +59,9 @@ export type ActiveAnalysisProgress = {
   updatedAt: string | null;
   analysisError: string | null;
   extractionFailed: boolean;
+  completedChunks: number | null;
+  totalChunks: number | null;
+  currentChunkIndex: number | null;
 };
 
 function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
@@ -87,6 +90,9 @@ function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
     updatedAt: readString(item, ["updatedAt"]) || null,
     analysisError: readString(item, ["analysisError", "lastError", "error"]) || null,
     extractionFailed: item.extractionFailed === true,
+    completedChunks: readNumber(item, ["completedChunks"]),
+    totalChunks: readNumber(item, ["totalChunks"]),
+    currentChunkIndex: readNumber(item, ["currentChunkIndex"]),
   };
 }
 

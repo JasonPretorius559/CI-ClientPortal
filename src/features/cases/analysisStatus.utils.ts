@@ -50,6 +50,9 @@ export type CaseAnalysisStatusDetail = {
   jobError: string | null;
   progress: number | null;
   stage: string | null;
+  completedChunks?: number | null;
+  totalChunks?: number | null;
+  currentChunkIndex?: number | null;
 };
 
 const ACTIVE_STATUSES = new Set([
@@ -74,6 +77,16 @@ export function getStageLabel(stage: string) {
       return "Document extraction failed";
     case "queued":
       return "Queued";
+    case "preparing_documents":
+      return "Preparing documents";
+    case "splitting_documents":
+      return "Splitting documents";
+    case "analyzing_chunks":
+      return "Analyzing sections";
+    case "reducing_analysis":
+      return "Combining findings";
+    case "saving_analysis":
+      return "Saving analysis";
     case "retrying":
       return "Retrying";
     case "reading_documents":
@@ -169,7 +182,7 @@ export function parseCaseAnalysisStatus(payload: unknown): CaseAnalysisStatusDet
   } else if (status === "queued") {
     stage = "queued";
   } else if (status === "running" || status === "processing") {
-    stage = "reading_documents";
+    stage = "preparing_documents";
     progress = progress ?? 65;
   } else if (status === "retrying") {
     stage = "retrying";
@@ -217,6 +230,19 @@ export function getProgressMessage(detail: CaseAnalysisStatusDetail) {
   }
 
   if (detail.message) return detail.message;
+
+  if (
+    detail.stage === "analyzing_chunks" &&
+    typeof detail.completedChunks === "number" &&
+    typeof detail.totalChunks === "number" &&
+    detail.totalChunks > 0
+  ) {
+    const sectionNumber =
+      typeof detail.currentChunkIndex === "number" && detail.currentChunkIndex > 0
+        ? detail.currentChunkIndex
+        : Math.min(detail.completedChunks + 1, detail.totalChunks);
+    return `Analyzing document section ${sectionNumber} of ${detail.totalChunks}.`;
+  }
 
   if (detail.stage) {
     return getStageLabel(detail.stage);

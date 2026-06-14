@@ -10,12 +10,12 @@ import {
 const STEP_ORDER = [
   "extracting_documents",
   "queued",
+  "preparing_documents",
+  "splitting_documents",
+  "analyzing_chunks",
+  "reducing_analysis",
+  "saving_analysis",
   "retrying",
-  "reading_documents",
-  "reviewing_policy",
-  "evaluating_cover",
-  "generating_recommendations",
-  "finalising",
   "completed",
 ] as const;
 
@@ -45,6 +45,12 @@ export function AnalysisProgressCard({
   const stage = detail.stage ?? normalized;
   const label = getProgressMessage(detail);
   const Icon = completed ? CheckCircle2 : failed ? FileText : normalized === "queued" ? Clock : Bot;
+  const chunkSummary =
+    typeof detail.completedChunks === "number" &&
+    typeof detail.totalChunks === "number" &&
+    detail.totalChunks > 0
+      ? `${detail.completedChunks} of ${detail.totalChunks} sections complete`
+      : null;
 
   if (!active && !completed && !failed) {
     return null;
@@ -53,6 +59,12 @@ export function AnalysisProgressCard({
   const visibleSteps = STEP_ORDER.filter((step) => {
     if (step === "retrying" && stage !== "retrying") return false;
     if (step === "extracting_documents" && detail.documentExtraction?.pdfCount === 0) return false;
+    if (
+      ["preparing_documents", "splitting_documents", "analyzing_chunks", "reducing_analysis", "saving_analysis"].includes(step) &&
+      detail.documentExtraction?.stage === "extracting"
+    ) {
+      return false;
+    }
     return true;
   });
 
@@ -75,6 +87,9 @@ export function AnalysisProgressCard({
                 <p className="text-sm font-semibold text-ink-700">{progress}%</p>
               </div>
               <p className="mt-1 text-sm text-ink-600">{label}</p>
+              {chunkSummary && !failed && !completed ? (
+                <p className="mt-1 text-xs font-medium text-ink-500">{chunkSummary}</p>
+              ) : null}
               {!failed && !completed ? (
                 <p className="mt-1 text-xs text-ink-500">
                   We check progress every few seconds. You can leave this page open or come back later.
