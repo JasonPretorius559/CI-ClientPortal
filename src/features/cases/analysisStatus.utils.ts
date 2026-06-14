@@ -87,6 +87,8 @@ export function getStageLabel(stage: string) {
       return "Combining findings";
     case "saving_analysis":
       return "Saving analysis";
+    case "cancelled":
+      return "Cancelled";
     case "retrying":
       return "Retrying";
     case "reading_documents":
@@ -144,6 +146,7 @@ function estimateProgressFromStatus(status: string, documentExtraction: Document
 
   if (COMPLETED_STATUSES.has(normalized)) return 100;
   if (normalized === "failed") return 100;
+  if (normalized === "cancelled") return 100;
 
   if (documentExtraction?.stage === "extracting") {
     const total = Math.max(documentExtraction.pdfCount, 1);
@@ -189,6 +192,9 @@ export function parseCaseAnalysisStatus(payload: unknown): CaseAnalysisStatusDet
     progress = progress ?? 40;
   } else if (status === "failed") {
     stage = "failed";
+    progress = 100;
+  } else if (status === "cancelled") {
+    stage = "cancelled";
     progress = 100;
   } else if (COMPLETED_STATUSES.has(status)) {
     stage = "completed";

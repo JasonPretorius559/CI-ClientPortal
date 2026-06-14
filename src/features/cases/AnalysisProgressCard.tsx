@@ -40,11 +40,12 @@ export function AnalysisProgressCard({
   const completed =
     normalized === "completed" ||
     normalized === "completed_with_warnings";
+  const cancelled = normalized === "cancelled" || detail.stage === "cancelled";
   const failed = normalized === "failed" || detail.stage === "extraction_failed";
-  const progress = detail.progress ?? (completed || failed ? 100 : 0);
+  const progress = detail.progress ?? (completed || failed || cancelled ? 100 : 0);
   const stage = detail.stage ?? normalized;
   const label = getProgressMessage(detail);
-  const Icon = completed ? CheckCircle2 : failed ? FileText : normalized === "queued" ? Clock : Bot;
+  const Icon = completed ? CheckCircle2 : failed || cancelled ? FileText : normalized === "queued" ? Clock : Bot;
   const chunkSummary =
     typeof detail.completedChunks === "number" &&
     typeof detail.totalChunks === "number" &&
@@ -52,7 +53,7 @@ export function AnalysisProgressCard({
       ? `${detail.completedChunks} of ${detail.totalChunks} sections complete`
       : null;
 
-  if (!active && !completed && !failed) {
+  if (!active && !completed && !failed && !cancelled) {
     return null;
   }
 
@@ -82,15 +83,15 @@ export function AnalysisProgressCard({
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-ink-950">
-                  {failed ? "Analysis issue" : completed ? "Analysis complete" : "AI analysis progress"}
+                  {failed ? "Analysis issue" : cancelled ? "Analysis cancelled" : completed ? "Analysis complete" : "AI analysis progress"}
                 </p>
                 <p className="text-sm font-semibold text-ink-700">{progress}%</p>
               </div>
               <p className="mt-1 text-sm text-ink-600">{label}</p>
-              {chunkSummary && !failed && !completed ? (
+              {chunkSummary && !failed && !completed && !cancelled ? (
                 <p className="mt-1 text-xs font-medium text-ink-500">{chunkSummary}</p>
               ) : null}
-              {!failed && !completed ? (
+              {!failed && !completed && !cancelled ? (
                 <p className="mt-1 text-xs text-ink-500">
                   We check progress every few seconds. You can leave this page open or come back later.
                 </p>
@@ -105,7 +106,7 @@ export function AnalysisProgressCard({
             <div
               className={[
                 "h-full rounded-full transition-all duration-700 ease-out",
-                failed ? "bg-red-500" : "bg-ink-950",
+                failed ? "bg-red-500" : cancelled ? "bg-amber-500" : "bg-ink-950",
               ].join(" ")}
               style={{ width: `${progress}%` }}
             />

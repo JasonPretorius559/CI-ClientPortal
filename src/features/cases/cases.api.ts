@@ -322,6 +322,12 @@ export async function analyzeCase({
   };
 }
 
+export async function cancelCaseAnalysis(caseId: string) {
+  return apiFetch<unknown>(`/api/auth/user-cases/${encodeURIComponent(caseId)}/analyze/cancel`, {
+    method: "POST",
+  });
+}
+
 function getFilenameFromDisposition(disposition: string | null) {
   if (!disposition) return null;
 

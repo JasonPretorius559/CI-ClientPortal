@@ -40,6 +40,7 @@ import {
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import {
   analyzeCase,
+  cancelCaseAnalysis,
   getCaseAnalysisStatus,
   getCaseAnalysisVersions,
   getCaseLogs,
@@ -324,6 +325,13 @@ function AnalysisBanner({
             tone: "error" as const,
             Icon: FileWarning,
           }
+        : status === "cancelled"
+          ? {
+              title: "Analysis cancelled",
+              message: detail.message || "The current analysis job was cancelled.",
+              tone: "info" as const,
+              Icon: AlertTriangle,
+            }
         : status === "failed"
           ? {
               title: "Analysis failed",
@@ -792,6 +800,25 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async () => cancelCaseAnalysis(caseId),
+    onSuccess: async () => {
+      setPollingEnabled(false);
+      showToast({ tone: "success", title: "Analysis cancelled." });
+      await Promise.all([
+        statusQuery.refetch(),
+        activeProgressQuery.refetch(),
+        versionsQuery.refetch(),
+        logsQuery.refetch(),
+      ]);
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError ? error.message : "Unable to cancel analysis.";
+      showToast({ tone: "error", title: message });
+    },
+  });
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden rounded-2xl border-ink-200 bg-white shadow-soft">
@@ -930,14 +957,24 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
               <Button
                 type="button"
                 onClick={() => analyzeMutation.mutate()}
-                isLoading={analyzeMutation.isPending || running}
-                disabled={!caseId || running || insufficientCredits}
+                isLoading={analyzeMutation.isPending || (running && !cancelMutation.isPending)}
+                disabled={!caseId || running || insufficientCredits || cancelMutation.isPending}
                 className="w-full"
               >
                 {!analyzeMutation.isPending && !running ? (
                   <Play className="h-4 w-4" aria-hidden="true" />
                 ) : null}
                 {running ? "Analyzing..." : "Run Analysis"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => cancelMutation.mutate()}
+                isLoading={cancelMutation.isPending}
+                disabled={!caseId || !running || analyzeMutation.isPending}
+                className="w-full"
+              >
+                Cancel Analysis
               </Button>
               <Button
                 type="button"
