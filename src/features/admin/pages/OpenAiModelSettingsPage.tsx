@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Save } from "lucide-react";
 import { SelectField } from "../../../components/forms/SelectField";
 import { Alert } from "../../../components/ui/Alert";
-import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/Card";
 import { ErrorState } from "../../../components/ui/ErrorState";

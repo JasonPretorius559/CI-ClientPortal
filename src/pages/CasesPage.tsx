@@ -13,7 +13,6 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { PageTabs } from "../components/ui/PageTabs";
 import { PageShell } from "../components/ui/PageShell";
 import { SearchInput } from "../components/ui/SearchInput";
-import { SelectField } from "../components/forms/SelectField";
 import { CaseList } from "../features/cases/CaseList";
 import { getUserCases } from "../features/cases/cases.api";
 import { getCaseDescription, getCaseId, getCaseStatus, getCaseTitle, getStatusGroup } from "../features/cases/cases.utils";

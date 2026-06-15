@@ -55,6 +55,22 @@ export type AdminFinanceResponse = {
       totalCostZar?: number | null;
       dailyCosts: Array<{ date: string; costUsd: number }>;
     };
+    reconciliation?: {
+      monthToDate?: {
+        available: boolean;
+        localEstimatedUsd: number | null;
+        officialUsd: number | null;
+        deltaUsd: number | null;
+        deltaPercent: number | null;
+      };
+      trailingWindow?: {
+        available: boolean;
+        localEstimatedUsd: number | null;
+        officialUsd: number | null;
+        deltaUsd: number | null;
+        deltaPercent: number | null;
+      };
+    };
   };
   budget: {
     monthlyBudgetUsd: number | null;
@@ -82,6 +98,7 @@ export type AdminFinanceResponse = {
   };
   caseEstimates: {
     pricingSource: string;
+    pricingVersion?: string;
     pricingCoverageModels: string[];
     totalEstimatedCaseCostUsd: number;
     totalEstimatedCaseCostZar?: number | null;
@@ -113,10 +130,23 @@ export type AdminFinanceResponse = {
       versionNumber: number | null;
       model: string | null;
       promptTokens: number;
+      cachedPromptTokens?: number | null;
+      uncachedPromptTokens?: number | null;
       completionTokens: number;
+      reasoningTokens?: number | null;
       totalTokens: number;
       estimatedCostUsd: number | null;
       estimatedCostZar?: number | null;
+      costBreakdown?: {
+        inputCostUsd?: number | null;
+        cachedInputCostUsd?: number | null;
+        outputCostUsd?: number | null;
+        pricingModel?: string | null;
+        pricingVersion?: string | null;
+        estimationMethod?: string | null;
+        hasCachedTokenDiscount?: boolean;
+        hasUnpricedCachedTokens?: boolean;
+      } | null;
       createdAt: string | null;
       completedAt: string | null;
     }>;
@@ -162,6 +192,28 @@ export async function getAdminFinance(days = 30): Promise<AdminFinanceResponse> 
         totalCostZar: readNumber(trailingWindow.totalCostZar),
         dailyCosts: readArray(trailingWindow, ["dailyCosts"]).map(normalizeCostBucket),
       },
+      reconciliation: isRecord(officialCostData.reconciliation)
+        ? {
+            monthToDate: isRecord(officialCostData.reconciliation.monthToDate)
+              ? {
+                  available: officialCostData.reconciliation.monthToDate.available === true,
+                  localEstimatedUsd: readNumber(officialCostData.reconciliation.monthToDate.localEstimatedUsd),
+                  officialUsd: readNumber(officialCostData.reconciliation.monthToDate.officialUsd),
+                  deltaUsd: readNumber(officialCostData.reconciliation.monthToDate.deltaUsd),
+                  deltaPercent: readNumber(officialCostData.reconciliation.monthToDate.deltaPercent),
+                }
+              : undefined,
+            trailingWindow: isRecord(officialCostData.reconciliation.trailingWindow)
+              ? {
+                  available: officialCostData.reconciliation.trailingWindow.available === true,
+                  localEstimatedUsd: readNumber(officialCostData.reconciliation.trailingWindow.localEstimatedUsd),
+                  officialUsd: readNumber(officialCostData.reconciliation.trailingWindow.officialUsd),
+                  deltaUsd: readNumber(officialCostData.reconciliation.trailingWindow.deltaUsd),
+                  deltaPercent: readNumber(officialCostData.reconciliation.trailingWindow.deltaPercent),
+                }
+              : undefined,
+          }
+        : undefined,
     },
     budget: {
       monthlyBudgetUsd: readNumber(budget.monthlyBudgetUsd),
@@ -192,6 +244,7 @@ export async function getAdminFinance(days = 30): Promise<AdminFinanceResponse> 
     },
     caseEstimates: {
       pricingSource: readString(caseEstimates, ["pricingSource"]),
+      pricingVersion: readString(caseEstimates, ["pricingVersion"]) || undefined,
       pricingCoverageModels: readArray(caseEstimates, ["pricingCoverageModels"]).filter(
         (item): item is string => typeof item === "string" && item.trim().length > 0,
       ),
@@ -214,24 +267,44 @@ export async function getAdminFinance(days = 30): Promise<AdminFinanceResponse> 
         latestModel: readString(item, ["latestModel"]) || null,
         lastAnalysedAt: readString(item, ["lastAnalysedAt"]) || null,
       })),
-      recentAnalyses: readArray(caseEstimates, ["recentAnalyses"]).map((item) => ({
-        analysisId: readString(item, ["analysisId"]),
-        caseId: readString(item, ["caseId"]),
-        caseTitle: readString(item, ["caseTitle"]),
-        caseReferenceNumber: readString(item, ["caseReferenceNumber"]) || null,
-        caseStatus: readString(item, ["caseStatus"]) || null,
-        analysisStatus: readString(item, ["analysisStatus"]),
-        analysisJobId: readString(item, ["analysisJobId"]) || null,
-        versionNumber: readNumber(isRecord(item) ? item.versionNumber : null),
-        model: readString(item, ["model"]) || null,
-        promptTokens: readNumber(isRecord(item) ? item.promptTokens : null) ?? 0,
-        completionTokens: readNumber(isRecord(item) ? item.completionTokens : null) ?? 0,
-        totalTokens: readNumber(isRecord(item) ? item.totalTokens : null) ?? 0,
-        estimatedCostUsd: readNumber(isRecord(item) ? item.estimatedCostUsd : null),
-        estimatedCostZar: readNumber(isRecord(item) ? item.estimatedCostZar : null),
-        createdAt: readString(item, ["createdAt"]) || null,
-        completedAt: readString(item, ["completedAt"]) || null,
-      })),
+      recentAnalyses: readArray(caseEstimates, ["recentAnalyses"]).map((item) => {
+        const record = isRecord(item) ? item : null;
+        const costBreakdown = isRecord(record?.costBreakdown) ? record.costBreakdown : null;
+
+        return {
+          analysisId: readString(item, ["analysisId"]),
+          caseId: readString(item, ["caseId"]),
+          caseTitle: readString(item, ["caseTitle"]),
+          caseReferenceNumber: readString(item, ["caseReferenceNumber"]) || null,
+          caseStatus: readString(item, ["caseStatus"]) || null,
+          analysisStatus: readString(item, ["analysisStatus"]),
+          analysisJobId: readString(item, ["analysisJobId"]) || null,
+          versionNumber: readNumber(record?.versionNumber),
+          model: readString(item, ["model"]) || null,
+          promptTokens: readNumber(record?.promptTokens) ?? 0,
+          cachedPromptTokens: readNumber(record?.cachedPromptTokens),
+          uncachedPromptTokens: readNumber(record?.uncachedPromptTokens),
+          completionTokens: readNumber(record?.completionTokens) ?? 0,
+          reasoningTokens: readNumber(record?.reasoningTokens),
+          totalTokens: readNumber(record?.totalTokens) ?? 0,
+          estimatedCostUsd: readNumber(record?.estimatedCostUsd),
+          estimatedCostZar: readNumber(record?.estimatedCostZar),
+          costBreakdown: costBreakdown
+            ? {
+                inputCostUsd: readNumber(costBreakdown.inputCostUsd),
+                cachedInputCostUsd: readNumber(costBreakdown.cachedInputCostUsd),
+                outputCostUsd: readNumber(costBreakdown.outputCostUsd),
+                pricingModel: readString(costBreakdown, ["pricingModel"]) || null,
+                pricingVersion: readString(costBreakdown, ["pricingVersion"]) || null,
+                estimationMethod: readString(costBreakdown, ["estimationMethod"]) || null,
+                hasCachedTokenDiscount: costBreakdown.hasCachedTokenDiscount === true,
+                hasUnpricedCachedTokens: costBreakdown.hasUnpricedCachedTokens === true,
+              }
+            : null,
+          createdAt: readString(item, ["createdAt"]) || null,
+          completedAt: readString(item, ["completedAt"]) || null,
+        };
+      }),
     },
   };
 }
