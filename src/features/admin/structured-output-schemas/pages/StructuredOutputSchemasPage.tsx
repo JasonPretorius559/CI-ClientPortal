@@ -97,7 +97,7 @@ export function StructuredOutputSchemasPage() {
 
   return (
     <AdminPageAccess>
-      <div className="space-y-6">
+      <div className="page-section">
         <PageHeader
           title="Structured Output Schemas"
           description="List, filter, draft, publish, and inspect AI output schemas used by case analysis."
@@ -111,7 +111,7 @@ export function StructuredOutputSchemasPage() {
           )}
         />
 
-        <div className="grid gap-4 rounded-lg border border-ink-200 bg-white p-4 shadow-soft md:grid-cols-2 xl:grid-cols-4">
+        <div className="filter-panel grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SelectField label="Status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StructuredOutputSchemaStatus | "all")} options={statusOptions} />
           <SelectField
             label="Case type"
@@ -152,10 +152,10 @@ export function StructuredOutputSchemasPage() {
         ) : null}
 
         {!schemasQuery.isLoading && !schemasQuery.isError && filteredSchemas.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-soft">
+          <div className="data-table-shell">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-ink-200 text-sm">
-                <thead className="bg-ink-100 text-left text-xs font-semibold uppercase tracking-wide text-ink-500">
+              <table className="data-table">
+                <thead>
                   <tr>
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Key</th>

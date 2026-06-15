@@ -172,29 +172,7 @@ export function OpenAiModelSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Allowed Models</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {allowedModels.length ? (
-              <div className="flex flex-wrap gap-2">
-                {allowedModels.map((model) => (
-                  <Badge
-                    key={model}
-                    tone={model === selectedModel ? "solid" : "outline"}
-                  >
-                    {model}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <Alert tone="info">
-                No allowed models are configured yet. Seed the backend model settings first.
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+        
       </div>
     </AdminPageAccess>
   );

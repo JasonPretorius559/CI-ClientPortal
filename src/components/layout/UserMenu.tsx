@@ -45,8 +45,8 @@ function AnalysisCreditIndicator({ user }: { user: unknown }) {
       className={[
         "hidden items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium sm:flex",
         isDepleted
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-ink-200 bg-ink-50 text-ink-700",
+          ? "border-danger-100 bg-danger-50 text-danger-700"
+          : "border-surface-line bg-white text-ink-700",
       ].join(" ")}
       title={isDepleted ? "Analysis limit reached. Please purchase more analysis credits to continue." : detail}
     >
@@ -71,7 +71,7 @@ export function UserMenu() {
   return (
     <div className="flex items-center gap-3">
       <AnalysisCreditIndicator user={currentUser} />
-      <div className="hidden min-w-0 text-right sm:block">
+      <div className="hidden min-w-0 rounded-2xl border border-surface-line bg-white px-3 py-2 text-right shadow-sm sm:block">
         <p className="truncate text-sm font-semibold text-ink-950">{getUserDisplayName(currentUser)}</p>
         <p className="truncate text-xs text-ink-500">Signed in</p>
       </div>

@@ -31,37 +31,39 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
 
   return (
     <div className="fixed inset-0 z-40 lg:hidden">
-      <button className="absolute inset-0 bg-ink-950/40" aria-label="Close navigation" onClick={onClose} />
-      <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-white p-5 shadow-xl">
+      <button className="absolute inset-0 bg-ink-950/18 backdrop-blur-[2px]" aria-label="Close navigation" onClick={onClose} />
+      <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-surface-canvas p-5 shadow-float">
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <img src={cloudLogo} alt="" className="h-10 w-10 shrink-0 object-contain" aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-lg font-bold text-ink-950">Cloud Insure</p>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Operations portal</p>
             </div>
           </div>
           <Button variant="ghost" className="px-2" aria-label="Close navigation" onClick={onClose}>
             <X className="h-5 w-5" aria-hidden="true" />
           </Button>
         </div>
-        <nav className="mt-8 space-y-1" aria-label="Mobile navigation">
-          {visibleItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                cn(
-                  "block rounded-md px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-ink-100",
-                  isActive && "bg-ink-100 font-semibold text-ink-950",
-                )
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <div className="mt-8 rounded-[24px] bg-white p-3 shadow-soft">
+          <nav className="space-y-1" aria-label="Mobile navigation">
+            {visibleItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  cn(
+                    "block rounded-2xl px-3.5 py-3 text-sm font-medium text-ink-600 transition-colors duration-150 hover:bg-surface-muted hover:text-ink-950",
+                    isActive && "bg-brand-50 font-semibold text-brand-800",
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       </div>
     </div>
   );

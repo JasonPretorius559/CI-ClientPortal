@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, DollarSign, Wallet, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SelectField } from "../../../components/forms/SelectField";
@@ -192,23 +192,12 @@ export function AdminFinancePage() {
           />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <div className="grid gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Budget Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={statusTone(data.budget.status)}>
-                  Budget status: {data.budget.status || "unavailable"}
-                </Badge>
-                <Badge tone="outline">
-                  Live balance support: {data.officialCostData.liveBalanceSupported ? "Yes" : "No"}
-                </Badge>
-                <Badge tone="outline">
-                  Settings source: {data.budget.settingsSource || "unknown"}
-                </Badge>
-              </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
@@ -253,71 +242,6 @@ export function AdminFinancePage() {
                 <p>
                   Next provider update: {formatDate(data.budget.exchangeRateNextUpdateAt || null)}
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Provider Finance Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert tone="info">
-                {data.officialCostData.liveBalanceMessage}
-              </Alert>
-
-              <p className="text-sm text-ink-600">
-                {data.caseEstimates.pricingSource}
-              </p>
-              <p className="text-xs text-ink-500">
-                Exchange rates by{" "}
-                {data.budget.exchangeRateDocumentationUrl ? (
-                  <a
-                    href={data.budget.exchangeRateDocumentationUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium underline"
-                  >
-                    ExchangeRate-API
-                  </a>
-                ) : (
-                  "ExchangeRate-API"
-                )}
-                . Provider: {data.budget.exchangeRateProvider || "manual"}.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Pricing Coverage</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                    Priced analyses
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-ink-950">
-                    {formatInteger(data.caseEstimates.pricedAnalysesCount)}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                    Unpriced analyses
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-ink-950">
-                    {formatInteger(data.caseEstimates.unpricedAnalysesCount)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {data.caseEstimates.pricingCoverageModels.slice(0, 12).map((model) => (
-                  <Badge key={model} tone="outline">
-                    {model}
-                  </Badge>
-                ))}
               </div>
             </CardContent>
           </Card>

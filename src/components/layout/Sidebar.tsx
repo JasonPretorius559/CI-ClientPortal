@@ -22,34 +22,36 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdminUser(user));
 
   return (
-   <aside className="hidden h-screen w-64 shrink-0 border-r border-ink-200 bg-white px-4 py-5 lg:flex lg:flex-col">
-      <div className="flex items-center gap-3 px-2">
+    <aside className="hidden h-screen w-72 shrink-0 bg-surface-canvas px-5 py-6 lg:flex lg:flex-col">
+      <div className="flex items-center gap-3 px-2 py-2">
         <img src={cloudLogo} alt="" className="h-11 w-11 shrink-0 object-contain" aria-hidden="true" />
         <div className="min-w-0">
           <p className="text-lg font-bold tracking-tight text-ink-950">Cloud Insure</p>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-500">User portal</p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Operations portal</p>
         </div>
       </div>
-      <nav className="mt-8 space-y-1" aria-label="Main navigation">
-        {visibleItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-ink-100",
-                  isActive && "bg-ink-100 font-semibold text-ink-950 shadow-[inset_3px_0_0_#111111]",
-                )
-              }
-            >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {item.label}
-            </NavLink>
-          );
-        })}
-      </nav>
+      <div className="mt-8 rounded-[24px] bg-white p-3 shadow-soft">
+        <nav className="space-y-1" aria-label="Main navigation">
+          {visibleItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium text-ink-600 transition-colors duration-150 hover:bg-surface-muted hover:text-ink-950",
+                    isActive && "bg-brand-50 font-semibold text-brand-800",
+                  )
+                }
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
     </aside>
   );
 }

@@ -13,12 +13,9 @@ import {
 import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/Card";
+import { CommandBarGroup } from "../../components/ui/CommandBar";
+import { InlineMeta } from "../../components/ui/InlineMeta";
+import { SectionDivider } from "../../components/ui/PageShell";
 import { formatDate } from "../../lib/dates";
 import { ApiError } from "../../lib/api";
 import { useToast } from "../../components/ui/toast-context";
@@ -43,7 +40,6 @@ import {
   cancelCaseAnalysis,
   getCaseAnalysisStatus,
   getCaseAnalysisVersions,
-  getCaseLogs,
   type AnalysisVersion,
 } from "./cases.api";
 import { getCaseStatus, getCaseTitle, readCaseField } from "./cases.utils";
@@ -144,18 +140,6 @@ function dataRecord(payload: unknown) {
   return isRecord(payload) && isRecord(payload.data) ? payload.data : {};
 }
 
-function arrayFromPayload(payload: unknown, keys: string[]) {
-  if (Array.isArray(payload)) return payload;
-  const records = [payload, dataRecord(payload)].filter(isRecord);
-  for (const record of records) {
-    for (const key of keys) {
-      const candidate = record[key];
-      if (Array.isArray(candidate)) return candidate;
-    }
-  }
-  return [];
-}
-
 function isCompleted(version: AnalysisVersion) {
   return reportReadyAnalysisStatuses.has(version.status?.trim().toLowerCase());
 }
@@ -202,93 +186,6 @@ function asList(value: unknown) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string" && value.trim()) return [value];
   return [];
-}
-
-function JsonValue({ value }: { value: unknown }) {
-  if (value === null || value === undefined || value === "")
-    return <span className="text-ink-500">Not provided</span>;
-  if (
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  )
-    return <span className="break-words">{String(value)}</span>;
-  if (Array.isArray(value)) {
-    if (!value.length) return <span className="text-ink-500">None</span>;
-    return (
-      <div className="space-y-2">
-        {value.map((item, index) => (
-          <div
-            key={index}
-            className="min-w-0 rounded-lg border border-ink-200 bg-ink-50 p-3"
-          >
-            <JsonValue value={item} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (isRecord(value)) {
-    const entries = Object.entries(value);
-    if (!entries.length) return <span className="text-ink-500">None</span>;
-    return (
-      <div className="space-y-2">
-        {entries.map(([key, nested]) => (
-          <div
-            key={key}
-            className="min-w-0 rounded-lg border border-ink-200 bg-ink-50 p-3"
-          >
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">
-              {key}
-            </p>
-            <JsonValue value={nested} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return <span>{String(value)}</span>;
-}
-
-function DetailRow({
-  label,
-  value,
-  breakAll = false,
-}: {
-  label: string;
-  value: unknown;
-  breakAll?: boolean;
-}) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-        {label}
-      </dt>
-      <dd
-        className={[
-          "mt-1 text-sm text-ink-950",
-          breakAll ? "break-all" : "break-words",
-        ].join(" ")}
-      >
-        {value || value === 0 ? String(value) : "Not provided"}
-      </dd>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: unknown }) {
-  return (
-    <Card className="rounded-xl shadow-soft">
-      <CardContent>
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-          {label}
-        </p>
-        <p className="mt-2 break-words text-2xl font-semibold text-ink-950">
-          {String(value ?? "Not provided")}
-        </p>
-      </CardContent>
-    </Card>
-  );
 }
 
 function AnalysisBanner({
@@ -389,12 +286,12 @@ function AnalysisVersionList({
   setSelectedVersionId: (analysisId: string) => void;
 }) {
   return (
-    <Card className="rounded-xl">
-      <CardHeader>
-        <CardTitle>Analysis Versions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {versions.length ? (
+    <section className="space-y-4">
+      <SectionDivider
+        title="Analysis Versions"
+        description="Switch between historical outputs and the current working version."
+      />
+      {versions.length ? (
           <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
             {versions.map((version) => {
               const selected =
@@ -424,8 +321,8 @@ function AnalysisVersionList({
                       {formatStatus(version.status)}
                     </Badge>
                   </div>
-                  <div className="mt-3 grid min-w-0 gap-1 text-xs text-ink-500">
-                    <span>Created: {formatDate(version.createdAt)}</span>
+                    <div className="mt-3 grid min-w-0 gap-1 text-xs text-ink-500">
+                      <span>Created: {formatDate(version.createdAt)}</span>
                     <span>Confidence: {score(version.confidenceScore)}</span>
                     <span>
                       Satisfaction: {score(version.satisfactionScore, 5)}
@@ -441,8 +338,7 @@ function AnalysisVersionList({
             No AI analysis has been generated for this case yet.
           </p>
         )}
-      </CardContent>
-    </Card>
+    </section>
   );
 }
 
@@ -455,28 +351,12 @@ function SelectedAnalysis({
 }) {
   if (!version) {
     return (
-      <Card className="rounded-xl">
-        <CardContent>
-          <p className="text-sm text-ink-600">
-            No AI analysis has been generated for this case yet.
-          </p>
-        </CardContent>
-      </Card>
+      <p className="text-sm text-ink-600">
+        No AI analysis has been generated for this case yet.
+      </p>
     );
   }
 
-  const summary = firstAnalysisValue(version.analysis, [
-    "executiveSummary",
-    "summary",
-    "analysisSummary",
-    "overview",
-  ]);
-  const recommendations = asList(
-    firstAnalysisValue(version.analysis, [
-      "recommendations",
-      "recommendedActions",
-    ]),
-  );
   const missingInformation = asList(
     version.missingInformation ??
       firstAnalysisValue(version.analysis, [
@@ -488,16 +368,10 @@ function SelectedAnalysis({
     version.documentWarnings ??
       firstAnalysisValue(version.analysis, ["documentWarnings", "warnings"]),
   );
-  const clientDetails = firstAnalysisValue(version.analysis, [
-    "clientDetails",
-    "client",
-    "claimant",
-    "insured",
-  ]);
   const viewingOld = current && current.analysisId !== version.analysisId;
 
   return (
-    <div className="min-w-0 space-y-5">
+    <div className="min-w-0 space-y-7">
       {viewingOld ? (
         <Alert tone="info">
           Viewing Version {version.versionNumber}. Current Version:{" "}
@@ -505,17 +379,15 @@ function SelectedAnalysis({
         </Alert>
       ) : null}
 
-      
+      <SectionDivider
+        title={`Analysis Output: Version ${version.versionNumber}`}
+        description="Review the latest extracted gaps, warnings, and supporting information."
+      />
 
-      
-
-
-      <div className="grid min-w-0 gap-5 lg:grid-cols-2">
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle>Missing Information</CardTitle>
-          </CardHeader>
-          <CardContent className="flex min-w-0 flex-wrap gap-2">
+      <div className="grid min-w-0 gap-8 lg:grid-cols-2">
+        <section className="space-y-4">
+          <SectionDivider title="Missing Information" />
+          <div className="flex min-w-0 flex-wrap gap-2">
             {missingInformation.length ? (
               missingInformation.map((item, index) => (
                 <span
@@ -530,19 +402,17 @@ function SelectedAnalysis({
                 No missing information detected.
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle>Document Warnings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <section className="space-y-4">
+          <SectionDivider title="Document Warnings" />
+          <div className="space-y-2">
             {documentWarnings.length ? (
               documentWarnings.map((item, index) => (
                 <div
                   key={index}
-                  className="flex min-w-0 gap-2 rounded-lg border border-ink-200 p-3 text-sm text-ink-800"
+                  className="flex min-w-0 gap-2 border-b border-ink-200 py-3 text-sm text-ink-800"
                 >
                   <FileWarning
                     className="mt-0.5 h-4 w-4 shrink-0"
@@ -556,14 +426,9 @@ function SelectedAnalysis({
                 No document warnings detected.
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
-
-      
-
-
-      
     </div>
   );
 }
@@ -630,8 +495,8 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [duplicateReused, setDuplicateReused] = useState(false);
   const [insufficientCredits, setInsufficientCredits] = useState(false);
-  const [inputHash, setInputHash] = useState("");
-  const [model, setModel] = useState("");
+  const inputHash = "";
+  const model = "";
   const lastNotifiedStatusRef = useRef<string | null>(null);
 
   const files = getFiles(caseItem);
@@ -682,12 +547,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     queryFn: () => getCaseAnalysisVersions(caseId),
     enabled: Boolean(caseId),
   });
-  const logsQuery = useQuery({
-    queryKey: ["case-analysis-logs", caseId],
-    queryFn: () => getCaseLogs(caseId),
-    enabled: Boolean(caseId),
-  });
-
   const versions = useMemo(
     () => versionsQuery.data ?? [],
     [versionsQuery.data],
@@ -703,12 +562,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   }, [activeProgressQuery.data, caseId, statusQuery.data]);
   const analysisStatus = analysisDetail.status;
   const running = isActiveAnalysisStatus(analysisStatus) || pollingEnabled;
-  const logs = arrayFromPayload(logsQuery.data, [
-    "timeline",
-    "logs",
-    "items",
-    "history",
-  ]);
 
   useEffect(() => {
     if (!selectedVersionId && current) setSelectedVersionId(current.analysisId);
@@ -716,12 +569,11 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   useEffect(() => {
     if (!pollingEnabled) return;
-    if (isCompletedAnalysisStatus(analysisStatus) || analysisStatus === "failed") {
-      setPollingEnabled(false);
-      void versionsQuery.refetch();
-      void logsQuery.refetch();
-    }
-  }, [analysisStatus, logsQuery, pollingEnabled, versionsQuery]);
+      if (isCompletedAnalysisStatus(analysisStatus) || analysisStatus === "failed") {
+        setPollingEnabled(false);
+        void versionsQuery.refetch();
+      }
+  }, [analysisStatus, pollingEnabled, versionsQuery]);
 
   useEffect(() => {
     if (!pollingEnabled) return;
@@ -763,7 +615,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       await Promise.all([
         statusQuery.refetch(),
         versionsQuery.refetch(),
-        logsQuery.refetch(),
       ]);
     },
     onError: (error) => {
@@ -809,7 +660,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
         statusQuery.refetch(),
         activeProgressQuery.refetch(),
         versionsQuery.refetch(),
-        logsQuery.refetch(),
       ]);
     },
     onError: (error) => {
@@ -820,56 +670,38 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   });
 
   return (
-    <div className="space-y-6">
-      <Card className="overflow-hidden rounded-2xl border-ink-200 bg-white shadow-soft">
-        <CardContent>
-          <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <CaseStatusBadge status={getCaseStatus(caseItem)} />
-                <Badge
-                  tone={
-                    isCompleted(current ?? ({} as AnalysisVersion))
-                      ? "outline"
-                      : "muted"
-                  }
-                >
-                  {formatStatus(analysisStatus)}
-                </Badge>
-              </div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                Case Detail
-              </p>
-              <h2 className="mt-2 break-words text-3xl font-semibold tracking-tight text-ink-950 lg:text-4xl">
-                {getCaseTitle(caseItem)}
-              </h2>
-              <p className="mt-3 break-all text-sm text-ink-500">
-                Reference #{caseReferenceNumber || "Not assigned"}
-              </p>
-              <p className="mt-1 break-words text-base font-medium text-ink-800">
-                {caseType}
-              </p>
-              <div className="mt-6 grid min-w-0 gap-3 text-sm text-ink-600 sm:grid-cols-3">
-                <span className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-                  <strong className="text-ink-950">Created</strong>
-                  <br />
-                  {formatDate(submittedDate)}
-                </span>
-                <span className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-                  <strong className="text-ink-950">Last Updated</strong>
-                  <br />
-                  {formatDate(lastUpdatedDate)}
-                </span>
-                <span className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-                  <strong className="text-ink-950">Files Attached</strong>
-                  <br />
-                  {filesAttachedCount}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-7">
+      <section className="space-y-4 border-b border-ink-200 pb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <CaseStatusBadge status={getCaseStatus(caseItem)} />
+          <Badge
+            tone={
+              isCompleted(current ?? ({} as AnalysisVersion))
+                ? "outline"
+                : "muted"
+            }
+          >
+            {formatStatus(analysisStatus)}
+          </Badge>
+        </div>
+        <div>
+          <p className="page-toolbar-meta">Case workbench</p>
+          <h2 className="mt-2 break-words text-[2rem] font-semibold tracking-[-0.03em] text-ink-950">
+            {getCaseTitle(caseItem)}
+          </h2>
+          <p className="mt-2 break-words text-sm text-ink-600">
+            {caseType}
+          </p>
+        </div>
+        <InlineMeta
+          items={[
+            { label: "Reference", value: `#${caseReferenceNumber || "Not assigned"}` },
+            { label: "Created", value: formatDate(submittedDate) },
+            { label: "Last updated", value: formatDate(lastUpdatedDate) },
+            { label: "Files attached", value: filesAttachedCount },
+          ]}
+        />
+      </section>
 
       <AnalysisBanner
         detail={analysisDetail}
@@ -892,13 +724,14 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
             current={current}
           />
 
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle>Supporting Documents</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="space-y-4">
+            <SectionDivider
+              title="Supporting Documents"
+              description="Documents and attachments submitted with this case."
+            />
+            <div>
               {files.length ? (
-                <div className="space-y-3">
+                <div className="space-y-0 border-y border-ink-200">
                   {files.map((file, index) => {
                     const fileName = getFileName(file, index);
                     const details = [getFileType(file), getFileSize(file)]
@@ -908,7 +741,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                     return (
                       <div
                         key={`${fileName}-${index}`}
-                        className="flex min-w-0 flex-col gap-3 rounded-lg border border-ink-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex min-w-0 flex-col gap-3 border-b border-ink-200 py-4 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="break-all text-sm font-medium text-ink-950">
@@ -942,18 +775,17 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                   No supporting documents were attached to this case.
                 </p>
               )}
-            </CardContent>
-          </Card>
-
-          
+            </div>
+          </section>
         </main>
 
         <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
-          <Card className="rounded-xl">
-            <CardHeader>
-              <CardTitle>Analysis Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <section className="space-y-4 border-b border-ink-200 pb-5">
+            <SectionDivider
+              title="Analysis Actions"
+              description="Run, cancel, refresh, or export analysis for this case."
+            />
+            <CommandBarGroup className="xl:flex-col">
               <Button
                 type="button"
                 onClick={() => analyzeMutation.mutate()}
@@ -991,30 +823,25 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => {
-                    void statusQuery.refetch();
-                    void versionsQuery.refetch();
-                    void logsQuery.refetch();
-                  }}
-                >
+                    onClick={() => {
+                      void statusQuery.refetch();
+                      void versionsQuery.refetch();
+                    }}
+                  >
                   <RefreshCw className="h-4 w-4" aria-hidden="true" />
                   Refresh
                 </Button>
-                
               </div>
-            </CardContent>
-          </Card>
+            </CommandBarGroup>
+          </section>
 
           <AnalysisVersionList
             versions={versions}
             selectedVersion={selectedVersion ?? null}
             setSelectedVersionId={setSelectedVersionId}
           />
-
-          
         </aside>
       </div>
-
     </div>
   );
 }

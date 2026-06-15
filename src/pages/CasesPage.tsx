@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FilePlus2, Search } from "lucide-react";
+import { Clock3, FilePlus2, FolderKanban, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "../components/ui/Button";
+import { CommandBar, CommandBarGroup } from "../components/ui/CommandBar";
+import { DashboardMetricCard } from "../components/ui/DashboardMetricCard";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
+import { FilterPill } from "../components/ui/FilterPill";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { PageHeader } from "../components/ui/PageHeader";
+import { PageTabs } from "../components/ui/PageTabs";
+import { PageShell } from "../components/ui/PageShell";
+import { SearchInput } from "../components/ui/SearchInput";
 import { SelectField } from "../components/forms/SelectField";
-import { TextField } from "../components/forms/TextField";
 import { CaseList } from "../features/cases/CaseList";
 import { getUserCases } from "../features/cases/cases.api";
 import { getCaseDescription, getCaseId, getCaseStatus, getCaseTitle, getStatusGroup } from "../features/cases/cases.utils";
@@ -33,11 +38,28 @@ export function CasesPage() {
     });
   }, [casesQuery.data, search, statusFilter]);
 
+  const cases = useMemo(() => casesQuery.data ?? [], [casesQuery.data]);
+  const metrics = useMemo(() => ({
+    total: cases.length,
+    open: cases.filter((item) => getStatusGroup(getCaseStatus(item)) === "open").length,
+    completed: cases.filter((item) => getStatusGroup(getCaseStatus(item)) === "completed").length,
+    attention: cases.filter((item) => getStatusGroup(getCaseStatus(item)) === "attention").length,
+  }), [cases]);
+
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader
         title="My Cases"
         description="Review and track all cases submitted through your Cloud Insure account."
+        tabs={(
+          <PageTabs
+            items={[
+              { key: "all", label: "All cases", active: true, suffix: <span className="text-ink-400">{cases.length}</span> },
+              { key: "open", label: "Open" },
+              { key: "completed", label: "Completed" },
+            ]}
+          />
+        )}
         action={
           <Button asChild>
             <Link to="/cases/new">
@@ -48,24 +70,39 @@ export function CasesPage() {
         }
       />
 
-      <div className="grid gap-4 rounded-lg border border-ink-200 bg-white p-4 shadow-soft md:grid-cols-[1fr_220px]">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-9 h-4 w-4 text-ink-400" aria-hidden="true" />
-          <TextField label="Search cases" value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" />
+      {!casesQuery.isLoading && !casesQuery.isError ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <DashboardMetricCard label="Total cases" value={metrics.total} icon={<FolderKanban className="h-5 w-5" aria-hidden="true" />} />
+          <DashboardMetricCard label="Open" value={metrics.open} icon={<Clock3 className="h-5 w-5" aria-hidden="true" />} />
+          <DashboardMetricCard label="Completed" value={metrics.completed} icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />} />
+          <DashboardMetricCard label="Needs attention" value={metrics.attention} icon={<ShieldAlert className="h-5 w-5" aria-hidden="true" />} />
         </div>
-        <SelectField
-          label="Status"
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-          options={[
-            { label: "All statuses", value: "all" },
-            { label: "Open", value: "open" },
-            { label: "Completed", value: "completed" },
-            { label: "Needs attention", value: "attention" },
-            { label: "Other", value: "other" },
-          ]}
-        />
-      </div>
+      ) : null}
+
+      <CommandBar sticky>
+        <div className="toolbar">
+          <div>
+            <p className="page-toolbar-meta">Case filters</p>
+            <p className="text-sm text-ink-600">
+              Find active work quickly and narrow your view without losing context.
+            </p>
+          </div>
+        </div>
+        <CommandBarGroup>
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterPill active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>All</FilterPill>
+            <FilterPill active={statusFilter === "open"} onClick={() => setStatusFilter("open")}>Open</FilterPill>
+            <FilterPill active={statusFilter === "completed"} onClick={() => setStatusFilter("completed")}>Completed</FilterPill>
+            <FilterPill active={statusFilter === "attention"} onClick={() => setStatusFilter("attention")}>Needs attention</FilterPill>
+          </div>
+          <div className="min-w-0 flex-1 sm:max-w-md">
+            <SearchInput label="Search cases" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by title, ID, or status" />
+          </div>
+          <div className="w-full sm:w-56">
+            
+          </div>
+        </CommandBarGroup>
+      </CommandBar>
 
       {casesQuery.isLoading ? (
         <div className="space-y-3">
@@ -93,6 +130,6 @@ export function CasesPage() {
       ) : (
         <CaseList cases={filteredCases} />
       )}
-    </div>
+    </PageShell>
   );
 }

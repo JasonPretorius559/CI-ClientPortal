@@ -11,13 +11,13 @@ export function PortalLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-ink-100">
+    <div className="dashboard-shell">
       <Sidebar />
 
       <MobileNav open={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="z-30 shrink-0 border-b border-ink-200 bg-white/95 backdrop-blur">
+      <div className="dashboard-main">
+        <header className="z-30 shrink-0 bg-transparent">
           <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <Button
@@ -29,7 +29,7 @@ export function PortalLayout() {
                 <Menu className="h-5 w-5" aria-hidden="true" />
               </Button>
 
-              <span className="text-sm font-bold text-ink-950 lg:hidden">
+              <span className="text-sm font-semibold tracking-[-0.01em] text-ink-950 lg:hidden">
                 Cloud Insure
               </span>
             </div>
@@ -38,8 +38,8 @@ export function PortalLayout() {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl pb-8">
+        <main className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-5 sm:pb-5 lg:px-7 lg:pb-7">
+          <div className="workspace-canvas">
             <Outlet />
           </div>
         </main>

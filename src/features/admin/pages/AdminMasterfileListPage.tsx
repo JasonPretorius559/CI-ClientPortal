@@ -55,7 +55,7 @@ export function AdminMasterfileListPage({ resourceKey }: AdminMasterfileListPage
 
   return (
     <AdminPageAccess>
-      <div className="space-y-6">
+      <div className="page-section">
         <PageHeader
           title={config.label}
           description={config.description}
@@ -97,15 +97,15 @@ export function AdminMasterfileListPage({ resourceKey }: AdminMasterfileListPage
         ) : null}
 
         {!recordsQuery.isLoading && !recordsQuery.isError && records.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-soft">
+          <div className="data-table-shell">
             {archiveMutation.isError ? (
               <Alert tone="error" className="m-4">
                 {archiveMutation.error instanceof Error ? archiveMutation.error.message : "Unable to archive this record."}
               </Alert>
             ) : null}
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-ink-200 text-sm">
-                <thead className="bg-ink-100 text-left text-xs font-semibold uppercase tracking-wide text-ink-500">
+              <table className="data-table">
+                <thead>
                   <tr>
                     <th className="px-4 py-3">Name</th>
                     {config.requiresCaseType ? <th className="px-4 py-3">Case Type</th> : null}

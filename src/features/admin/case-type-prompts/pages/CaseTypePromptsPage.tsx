@@ -54,7 +54,7 @@ export function CaseTypePromptsPage() {
 
   return (
     <AdminPageAccess>
-      <div className="space-y-6">
+      <div className="page-section">
         <PageHeader
           title="Case Type Prompts"
           description="Manage the prompts used when cases are analysed for each case type and linked case type."
@@ -106,7 +106,7 @@ export function CaseTypePromptsPage() {
         {!promptsQuery.isLoading &&
         !promptsQuery.isError &&
         prompts.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-soft">
+          <div className="data-table-shell">
             {deleteMutation.isError ? (
               <Alert tone="error" className="m-4">
                 {deleteMutation.error instanceof Error
@@ -115,8 +115,8 @@ export function CaseTypePromptsPage() {
               </Alert>
             ) : null}
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-ink-200 text-sm">
-                <thead className="bg-ink-100 text-left text-xs font-semibold uppercase tracking-wide text-ink-500">
+              <table className="data-table">
+                <thead>
                   <tr>
                     <th className="px-4 py-3">Case Type</th>
                     <th className="px-4 py-3">Linked Case Type</th>
