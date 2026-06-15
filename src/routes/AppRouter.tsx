@@ -4,8 +4,11 @@ import { AdminLayout } from "../features/admin/AdminLayout";
 import { AdminMasterfileFormPage } from "../features/admin/pages/AdminMasterfileFormPage";
 import { AdminMasterfileListPage } from "../features/admin/pages/AdminMasterfileListPage";
 import { AdminSetupPage } from "../features/admin/pages/AdminSetupPage";
+import { AdminFinancePage } from "../features/admin/pages/AdminFinancePage";
+import { AdminFinancialSettingsPage } from "../features/admin/pages/AdminFinancialSettingsPage";
 import { AdminUserRegistrationPage } from "../features/admin/pages/AdminUserRegistrationPage";
 import { AdminUsersPage } from "../features/admin/pages/AdminUsersPage";
+import { OpenAiModelSettingsPage } from "../features/admin/pages/OpenAiModelSettingsPage";
 import { CaseTypePromptEditorPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptEditorPage";
 import { CaseTypePromptsPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptsPage";
 import { StructuredOutputSchemaEditorPage } from "../features/admin/structured-output-schemas/pages/StructuredOutputSchemaEditorPage";
@@ -59,6 +62,8 @@ export function AppRouter() {
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/setup" replace />} />
+              <Route path="finance" element={<AdminFinancePage />} />
+              <Route path="financial-settings" element={<AdminFinancialSettingsPage />} />
               <Route path="setup" element={<AdminSetupPage />} />
               <Route path="setup/case-types" element={<AdminMasterfileListPage resourceKey="caseTypes" />} />
               <Route path="setup/case-types/new" element={<AdminMasterfileFormPage resourceKey="caseTypes" />} />
@@ -69,6 +74,7 @@ export function AppRouter() {
               <Route path="setup/case-type-prompts" element={<CaseTypePromptsPage />} />
               <Route path="setup/case-type-prompts/new" element={<CaseTypePromptEditorPage />} />
               <Route path="setup/case-type-prompts/:id" element={<CaseTypePromptEditorPage />} />
+              <Route path="setup/openai-model-settings" element={<OpenAiModelSettingsPage />} />
               <Route path="setup/entity-types" element={<AdminMasterfileListPage resourceKey="entityTypes" />} />
               <Route path="setup/entity-types/new" element={<AdminMasterfileFormPage resourceKey="entityTypes" />} />
               <Route path="setup/entity-types/:id" element={<AdminMasterfileFormPage resourceKey="entityTypes" />} />

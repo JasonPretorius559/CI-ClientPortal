@@ -296,7 +296,7 @@ export async function analyzeCase({
 }): Promise<AnalyzeCaseResult> {
   const body: Record<string, unknown> = {};
   if (inputHash?.trim()) body.inputHash = inputHash.trim();
-  if (model?.trim()) body.model = model.trim();
+  if (model?.trim()) body.openAiModel = model.trim();
 
   const response = await fetch(
     `${API_BASE_URL}/api/admin/cases/${encodeURIComponent(caseId)}/analyze`,

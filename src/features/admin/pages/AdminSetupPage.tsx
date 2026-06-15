@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Database, FileJson2, MessageSquareText, UserPlus } from "lucide-react";
+import { Cpu, Database, FileJson2, Landmark, MessageSquareText, UserPlus } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/Card";
 import { PageHeader } from "../../../components/ui/PageHeader";
@@ -24,6 +24,18 @@ const setupCards = [
     description: "Manage OpenAI analysis prompts by case type and linked case type.",
     to: "/admin/setup/case-type-prompts",
     icon: MessageSquareText,
+  },
+  {
+    title: "OpenAI Model Settings",
+    description: "Choose the default analysis model used from masterfiles instead of the .env fallback.",
+    to: "/admin/setup/openai-model-settings",
+    icon: Cpu,
+  },
+  {
+    title: "Financial Settings",
+    description: "Manage OpenAI budget thresholds and exchange rates separately from the reporting dashboard.",
+    to: "/admin/financial-settings",
+    icon: Landmark,
   },
   {
     title: adminMasterfileConfigs.entityTypes.label,

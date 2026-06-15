@@ -9,6 +9,8 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "My Cases", to: "/cases" },
   { label: "New Case", to: "/cases/new" },
+  { label: "AI Cost Dashboard", to: "/admin/finance", adminOnly: true },
+  { label: "Financial Settings", to: "/admin/financial-settings", adminOnly: true },
   { label: "Admin Setup", to: "/admin/setup", adminOnly: true },
   { label: "Profile", to: "/profile" },
   { label: "Settings", to: "/settings" },
