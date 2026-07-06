@@ -39,5 +39,4 @@ export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type SetPasswordFormInput = z.infer<typeof setPasswordSchema>;
 export type SetPasswordInput = SetPasswordFormInput & {
   token: string;
-  email?: string | null;
 };

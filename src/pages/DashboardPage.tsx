@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Briefcase, CheckCircle2, Clock3, FilePlus2 } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Briefcase, CheckCircle2, Clock3, FilePlus2 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { DashboardMetricCard } from "../components/ui/DashboardMetricCard";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -43,13 +43,47 @@ export function DashboardPage() {
           </Button>
         }
       />
-      <InlineMeta
-        items={[
-          { label: "Total portfolio", value: `${cases.length} cases` },
-          { label: "Open work", value: `${openCases} active` },
-          { label: "Needs attention", value: `${attentionCases} flagged` },
-        ]}
-      />
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
+        <div className="surface-card px-5 py-6 sm:px-7">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">Operations Snapshot</p>
+          <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.9fr)]">
+            <div>
+              <h2 className="max-w-xl text-[1.8rem] font-semibold leading-tight tracking-[-0.05em] text-ink-950 sm:text-[2.4rem]">
+                Keep active claims moving with fewer handoffs and a clearer review queue.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-ink-600">
+                The dashboard now acts like a case control room: current workload on the left, portfolio signals and next actions on the right.
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-surface-line bg-surface-muted p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Today&apos;s focus</p>
+              <div className="mt-4 space-y-4">
+                <div className="border-b border-surface-line pb-3">
+                  <p className="text-3xl font-semibold tracking-[-0.05em] text-ink-950">{openCases}</p>
+                  <p className="mt-1 text-sm text-ink-600">Active cases in progress</p>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink-950">Priority queue</p>
+                    <p className="mt-1 text-sm text-ink-600">{attentionCases} cases need attention.</p>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-ink-500" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <InlineMeta
+          className="h-fit"
+          items={[
+            { label: "Total portfolio", value: `${cases.length} cases` },
+            { label: "Open work", value: `${openCases} active` },
+            { label: "Completed", value: `${completedCases} closed` },
+            { label: "Needs attention", value: `${attentionCases} flagged` },
+          ]}
+        />
+      </section>
 
       {casesQuery.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -65,10 +99,10 @@ export function DashboardPage() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetricCard label="Total cases" value={cases.length} icon={<Briefcase className="h-5 w-5" aria-hidden="true" />} />
-            <DashboardMetricCard label="Open cases" value={openCases} icon={<Clock3 className="h-5 w-5" aria-hidden="true" />} />
-            <DashboardMetricCard label="Completed cases" value={completedCases} icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />} />
-            <DashboardMetricCard label="Cases needing attention" value={attentionCases} icon={<AlertCircle className="h-5 w-5" aria-hidden="true" />} />
+            <DashboardMetricCard label="Total cases" value={cases.length} detail="Portfolio volume" icon={<Briefcase className="h-5 w-5" aria-hidden="true" />} />
+            <DashboardMetricCard label="Open cases" value={openCases} detail="Currently moving" icon={<Clock3 className="h-5 w-5" aria-hidden="true" />} />
+            <DashboardMetricCard label="Completed cases" value={completedCases} detail="Resolved work" icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />} />
+            <DashboardMetricCard label="Cases needing attention" value={attentionCases} detail="Needs review" icon={<AlertCircle className="h-5 w-5" aria-hidden="true" />} />
           </div>
 
           {cases.length === 0 ? (

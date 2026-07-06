@@ -99,6 +99,7 @@ function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
 export async function getActiveAnalysisProgress() {
   const response = await apiFetch<unknown>("/api/auth/analysis-progress", {
     method: "GET",
+    cache: "no-store",
     skipAuthRedirect: true,
   });
 

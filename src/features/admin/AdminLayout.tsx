@@ -1,11 +1,9 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { Coins, Landmark, Settings2 } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 const adminTabs = [
   { label: "Setup", to: "/admin/setup", icon: Settings2 },
-  { label: "AI Costs", to: "/admin/finance", icon: Coins },
-  { label: "Financial Settings", to: "/admin/financial-settings", icon: Landmark },
 ];
 
 export function AdminLayout() {

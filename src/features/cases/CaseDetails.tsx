@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Bot,
@@ -122,7 +122,14 @@ function mergeCaseProgressDetail(
   detail: CaseAnalysisStatusDetail,
   activeProgress: ActiveAnalysisProgress | undefined,
 ): CaseAnalysisStatusDetail {
-  if (!activeProgress) return detail;
+  if (
+    !activeProgress ||
+    isCompletedAnalysisStatus(detail.status) ||
+    detail.status === "failed" ||
+    detail.status === "cancelled"
+  ) {
+    return detail;
+  }
 
   return {
     ...detail,
@@ -302,10 +309,10 @@ function AnalysisVersionList({
                   key={version.analysisId}
                   onClick={() => setSelectedVersionId(version.analysisId)}
                   className={[
-                    "w-full min-w-0 rounded-lg border p-4 text-left transition hover:border-ink-500",
+                    "w-full min-w-0 border border-surface-line bg-white p-4 text-left transition hover:border-ink-500",
                     selected
-                      ? "border-ink-950 bg-white shadow-soft"
-                      : "border-ink-200 bg-white",
+                      ? "border-ink-950"
+                      : "border-surface-line",
                   ].join(" ")}
                 >
                   <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
@@ -387,15 +394,15 @@ function SelectedAnalysis({
       <div className="grid min-w-0 gap-8 lg:grid-cols-2">
         <section className="space-y-4">
           <SectionDivider title="Missing Information" />
-          <div className="flex min-w-0 flex-wrap gap-2">
+          <div className="space-y-2">
             {missingInformation.length ? (
               missingInformation.map((item, index) => (
-                <span
+                <div
                   key={index}
-                  className="min-w-0 break-words rounded-full border border-dashed border-ink-400 px-3 py-1.5 text-sm text-ink-800"
+                  className="min-w-0 break-words border-l-2 border-warning-500 bg-warning-50/60 px-3 py-2 text-sm text-ink-800"
                 >
                   {String(item)}
-                </span>
+                </div>
               ))
             ) : (
               <p className="text-sm text-ink-600">
@@ -491,6 +498,7 @@ function SelectedAnalysis({
 
 export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [duplicateReused, setDuplicateReused] = useState(false);
@@ -569,11 +577,18 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   useEffect(() => {
     if (!pollingEnabled) return;
-      if (isCompletedAnalysisStatus(analysisStatus) || analysisStatus === "failed") {
-        setPollingEnabled(false);
-        void versionsQuery.refetch();
-      }
-  }, [analysisStatus, pollingEnabled, versionsQuery]);
+    if (
+      isCompletedAnalysisStatus(analysisStatus) ||
+      analysisStatus === "failed" ||
+      analysisStatus === "cancelled"
+    ) {
+      setPollingEnabled(false);
+      void Promise.all([
+        versionsQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["cases", "mine"] }),
+      ]);
+    }
+  }, [analysisStatus, pollingEnabled, queryClient, versionsQuery]);
 
   useEffect(() => {
     if (!pollingEnabled) return;
@@ -613,6 +628,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       if (returnedAnalysisId) setSelectedVersionId(returnedAnalysisId);
       if (result.status === 202) setPollingEnabled(true);
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cases", "mine"] }),
         statusQuery.refetch(),
         versionsQuery.refetch(),
       ]);
@@ -657,6 +673,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       setPollingEnabled(false);
       showToast({ tone: "success", title: "Analysis cancelled." });
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cases", "mine"] }),
         statusQuery.refetch(),
         activeProgressQuery.refetch(),
         versionsQuery.refetch(),
@@ -757,7 +774,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                             target="_blank"
                             rel="noreferrer"
                             download={fileName}
-                            className="inline-flex shrink-0 items-center justify-center rounded-md border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
+                            className="inline-flex shrink-0 items-center justify-center border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
                           >
                             Download
                           </a>

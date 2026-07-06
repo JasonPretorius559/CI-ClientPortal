@@ -119,6 +119,7 @@ function normalizeLookupResponse(response: unknown, keys: string[]): CaseLookupO
 export async function getUserCases() {
   const response = await apiFetch<unknown>("/api/auth/user-cases", {
     method: "GET",
+    cache: "no-store",
   });
 
   return normalizeCasesResponse(response);
@@ -247,9 +248,10 @@ export function normalizeAnalysisVersionsResponse(response: unknown): AnalysisVe
 
 export async function getCaseAnalysisVersions(caseId: string) {
   const response = await apiFetch<unknown>(
-    `/api/admin/cases/${encodeURIComponent(caseId)}/analysis/versions`,
+    `/api/auth/user-cases/${encodeURIComponent(caseId)}/analysis/versions`,
     {
       method: "GET",
+      cache: "no-store",
     },
   );
 
@@ -257,8 +259,9 @@ export async function getCaseAnalysisVersions(caseId: string) {
 }
 
 export function getCaseAnalysisStatus(caseId: string) {
-  return apiFetch<unknown>(`/api/admin/cases/${encodeURIComponent(caseId)}/analysis-status`, {
+  return apiFetch<unknown>(`/api/auth/user-cases/${encodeURIComponent(caseId)}/analysis-status`, {
     method: "GET",
+    cache: "no-store",
   });
 }
 
@@ -299,7 +302,7 @@ export async function analyzeCase({
   if (model?.trim()) body.openAiModel = model.trim();
 
   const response = await fetch(
-    `${API_BASE_URL}/api/admin/cases/${encodeURIComponent(caseId)}/analyze`,
+    `${API_BASE_URL}/api/auth/user-cases/${encodeURIComponent(caseId)}/analyze`,
     {
       method: "POST",
       credentials: "include",

@@ -1,5 +1,6 @@
-import { LogOut, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { CircleUserRound, LogOut, Sparkles } from "lucide-react";
 import { Button } from "../ui/Button";
 import { useAuth } from "../../features/auth/useAuth";
 import { getUserDisplayName } from "../../lib/user";
@@ -29,7 +30,7 @@ function readNumber(value: unknown, keys: string[]) {
   return null;
 }
 
-function AnalysisCreditIndicator({ user }: { user: unknown }) {
+function AnalysisCreditSummary({ user }: { user: unknown }) {
   const remaining = readNumber(user, ["analysisRemaining", "remainingAnalyses", "analysisCreditsRemaining"]);
   const limit = readNumber(user, ["analysisLimit", "analysisCredits", "analysisAllowance"]);
   const used = readNumber(user, ["analysisUsed", "usedAnalyses"]);
@@ -37,16 +38,16 @@ function AnalysisCreditIndicator({ user }: { user: unknown }) {
   if (remaining === null && limit === null && used === null) return null;
 
   const isDepleted = remaining !== null && remaining <= 0;
-  const label = remaining === null ? "Analysis credits" : `${remaining} analysis ${remaining === 1 ? "credit" : "credits"} left`;
+  const label = remaining === null ? "Analysis credits" : `${remaining} credits left`;
   const detail = limit !== null && used !== null ? `${used} of ${limit} used` : "1 credit is deducted per completed analysis";
 
   return (
     <div
       className={[
-        "hidden items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium sm:flex",
+        "flex items-center gap-2 border px-3 py-2 text-xs font-medium",
         isDepleted
           ? "border-danger-100 bg-danger-50 text-danger-700"
-          : "border-surface-line bg-white text-ink-700",
+          : "border-surface-line bg-surface-muted text-ink-700",
       ].join(" ")}
       title={isDepleted ? "Analysis limit reached. Please purchase more analysis credits to continue." : detail}
     >
@@ -58,6 +59,8 @@ function AnalysisCreditIndicator({ user }: { user: unknown }) {
 
 export function UserMenu() {
   const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const userQuery = useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => normalizeAuthUser(await authApi.getMe()),
@@ -68,17 +71,66 @@ export function UserMenu() {
   });
   const currentUser = userQuery.data ?? user;
 
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
   return (
-    <div className="flex items-center gap-3">
-      <AnalysisCreditIndicator user={currentUser} />
-      <div className="hidden min-w-0 rounded-2xl border border-surface-line bg-white px-3 py-2 text-right shadow-sm sm:block">
-        <p className="truncate text-sm font-semibold text-ink-950">{getUserDisplayName(currentUser)}</p>
-        <p className="truncate text-xs text-ink-500">Signed in</p>
-      </div>
-      <Button variant="ghost" onClick={logout} aria-label="Log out">
-        <LogOut className="h-4 w-4" aria-hidden="true" />
-        <span className="hidden sm:inline">Log out</span>
+    <div className="relative" ref={menuRef}>
+      <Button
+        variant="ghost"
+        className="h-11 w-11 px-0"
+        aria-label="Open user menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <CircleUserRound className="h-5 w-5" aria-hidden="true" />
       </Button>
+
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-72 border border-surface-line bg-white p-4 shadow-float">
+          <div className="border-b border-surface-line pb-3">
+            <p className="text-sm font-semibold text-ink-950">{getUserDisplayName(currentUser)}</p>
+            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-ink-500">Account</p>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <AnalysisCreditSummary user={currentUser} />
+            <Button
+              variant="secondary"
+              className="w-full justify-start"
+              onClick={() => {
+                setOpen(false);
+                logout();
+              }}
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              Log out
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

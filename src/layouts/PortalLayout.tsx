@@ -16,8 +16,8 @@ export function PortalLayout() {
 
       <MobileNav open={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-      <div className="dashboard-main">
-        <header className="z-30 shrink-0 bg-transparent">
+      <div className="dashboard-main lg:pl-72">
+        <header className="z-30 shrink-0 border-b border-surface-line/80 bg-transparent">
           <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <Button
@@ -38,7 +38,7 @@ export function PortalLayout() {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-5 sm:pb-5 lg:px-7 lg:pb-7">
+        <main className="min-h-0 flex-1 overflow-y-auto px-1 pb-4 sm:px-3 sm:pb-5 lg:px-5 lg:pb-7">
           <div className="workspace-canvas">
             <Outlet />
           </div>

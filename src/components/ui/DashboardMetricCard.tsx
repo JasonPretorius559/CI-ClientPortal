@@ -13,19 +13,19 @@ export function DashboardMetricCard({
   detail?: string;
 }) {
   return (
-    <Card className="rounded-2xl p-5 sm:p-6">
+    <Card className="p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-ink-500">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-ink-950">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-ink-950">
             {value}
           </p>
           {detail ? (
-            <p className="mt-2 text-xs font-medium text-ink-500">{detail}</p>
+            <p className="mt-3 text-xs font-medium uppercase tracking-[0.12em] text-ink-500">{detail}</p>
           ) : null}
         </div>
         {icon ? (
-          <div className="rounded-2xl bg-brand-50 p-2.5 text-brand-700">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-surface-line bg-surface-muted text-ink-700">
             {icon}
           </div>
         ) : null}

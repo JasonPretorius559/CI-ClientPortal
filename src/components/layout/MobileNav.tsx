@@ -9,8 +9,6 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "My Cases", to: "/cases" },
   { label: "New Case", to: "/cases/new" },
-  { label: "AI Cost Dashboard", to: "/admin/finance", adminOnly: true },
-  { label: "Financial Settings", to: "/admin/financial-settings", adminOnly: true },
   { label: "Admin Setup", to: "/admin/setup", adminOnly: true },
   { label: "Profile", to: "/profile" },
   { label: "Settings", to: "/settings" },
@@ -32,7 +30,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
   return (
     <div className="fixed inset-0 z-40 lg:hidden">
       <button className="absolute inset-0 bg-ink-950/18 backdrop-blur-[2px]" aria-label="Close navigation" onClick={onClose} />
-      <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-surface-canvas p-5 shadow-float">
+      <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] border-r border-surface-line bg-[#f3f3f3] p-5 shadow-float">
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <img src={cloudLogo} alt="" className="h-10 w-10 shrink-0 object-contain" aria-hidden="true" />
@@ -45,7 +43,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             <X className="h-5 w-5" aria-hidden="true" />
           </Button>
         </div>
-        <div className="mt-8 rounded-[24px] bg-white p-3 shadow-soft">
+        <div className="mt-8 border-t border-surface-line pt-5">
           <nav className="space-y-1" aria-label="Mobile navigation">
             {visibleItems.map((item) => (
               <NavLink
@@ -54,8 +52,8 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                 onClick={onClose}
                 className={({ isActive }) =>
                   cn(
-                    "block rounded-2xl px-3.5 py-3 text-sm font-medium text-ink-600 transition-colors duration-150 hover:bg-surface-muted hover:text-ink-950",
-                    isActive && "bg-brand-50 font-semibold text-brand-800",
+                    "block border-l-2 border-transparent px-3 py-3 text-sm font-medium text-ink-600 transition-colors duration-150 hover:border-ink-300 hover:bg-white/70 hover:text-ink-950",
+                    isActive && "border-ink-950 bg-white text-ink-950",
                   )
                 }
               >

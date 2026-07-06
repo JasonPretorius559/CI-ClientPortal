@@ -13,19 +13,19 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "border-brand-700 bg-brand-800 text-white shadow-sm hover:bg-brand-700 active:bg-brand-900 disabled:border-surface-line disabled:bg-ink-200 disabled:text-ink-500",
+    "border-ink-950 bg-ink-950 text-white hover:bg-ink-800 active:bg-black disabled:border-surface-line disabled:bg-ink-200 disabled:text-ink-500",
   secondary:
-    "border-surface-line bg-white text-ink-900 shadow-sm hover:border-brand-100 hover:bg-brand-50 hover:text-brand-800 active:bg-brand-100 disabled:border-surface-line disabled:bg-surface-muted disabled:text-ink-500",
+    "border-surface-line bg-white text-ink-900 hover:border-ink-300 hover:bg-surface-muted active:bg-ink-100 disabled:border-surface-line disabled:bg-surface-muted disabled:text-ink-500",
   ghost:
-    "border-transparent bg-transparent text-ink-700 hover:bg-surface-muted hover:text-ink-900 active:bg-ink-100 disabled:text-ink-500",
+    "border-transparent bg-transparent text-ink-700 hover:bg-white hover:text-ink-900 active:bg-surface-muted disabled:text-ink-500",
   danger:
-    "border-danger-100 bg-white text-danger-700 shadow-sm hover:border-danger-500 hover:bg-danger-50 active:bg-danger-100 disabled:border-surface-line disabled:bg-surface-muted disabled:text-ink-500",
+    "border-danger-100 bg-white text-danger-700 hover:border-danger-500 hover:bg-danger-50 active:bg-danger-100 disabled:border-surface-line disabled:bg-surface-muted disabled:text-ink-500",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", isLoading = false, disabled, children, type = "button", asChild = false, ...props }, ref) => {
     const buttonClassName = cn(
-      "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold no-underline transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60",
+      "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold no-underline transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60",
       variants[variant],
       className,
     );

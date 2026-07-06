@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,8 +7,7 @@
 :root {
   color-scheme: light;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    "Manrope", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,7 +21,12 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: #f5f7fb;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.52) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.52) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 28%),
+    linear-gradient(180deg, #f5f5f5 0%, #ececec 100%);
+  background-size: 32px 32px, 32px 32px, auto, auto;
   color: #111111;
 }
 
@@ -55,21 +61,19 @@ textarea {
 
 @layer components {
   .page-shell {
-    @apply space-y-8;
+    @apply space-y-12;
   }
 
   .surface-card {
-    @apply rounded-2xl border border-surface-line bg-white;
+    @apply relative overflow-hidden rounded-[1.75rem] border border-surface-line bg-white;
     box-shadow:
-      0 1px 2px rgba(24, 24, 27, 0.03),
-      0 14px 36px rgba(36, 59, 125, 0.05);
+      0 18px 40px rgba(17, 17, 17, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75);
   }
 
   .surface-card-muted {
-    @apply rounded-2xl border border-surface-line bg-surface-muted;
-    box-shadow:
-      0 1px 2px rgba(24, 24, 27, 0.025),
-      0 10px 28px rgba(36, 59, 125, 0.04);
+    @apply relative overflow-hidden rounded-[1.75rem] border border-surface-line bg-surface-muted;
+    box-shadow: 0 12px 28px rgba(17, 17, 17, 0.03);
   }
 
   .page-section {
@@ -77,19 +81,19 @@ textarea {
   }
 
   .dashboard-shell {
-    @apply flex h-screen overflow-hidden bg-surface-canvas;
+    @apply flex min-h-screen bg-transparent;
   }
 
   .dashboard-main {
-    @apply flex min-w-0 flex-1 flex-col overflow-hidden;
+    @apply flex min-w-0 flex-1 flex-col;
   }
 
   .workspace-canvas {
-    @apply mx-auto min-h-full w-full max-w-[1440px] rounded-[28px] bg-white px-5 py-6 shadow-panel sm:px-7 sm:py-7 lg:px-9 lg:py-8;
+    @apply mx-auto min-h-full w-full max-w-[1480px] px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-8;
   }
 
   .action-cluster {
-    @apply flex flex-wrap items-center gap-2;
+    @apply flex flex-wrap items-center gap-3;
   }
 
   .section-divider {
@@ -97,11 +101,11 @@ textarea {
   }
 
   .command-bar {
-    @apply surface-card flex flex-col gap-4 px-4 py-4 sm:px-5;
+    @apply surface-card flex flex-col gap-5 px-5 py-5 sm:px-6;
   }
 
   .command-bar-sticky {
-    @apply sticky top-0 z-20 bg-transparent pt-1;
+    @apply sticky top-0 z-20 bg-[linear-gradient(180deg,rgba(236,236,236,0.97),rgba(236,236,236,0.88)_82%,rgba(236,236,236,0))] pt-2 backdrop-blur-sm;
   }
 
   .command-bar-group {
@@ -125,31 +129,31 @@ textarea {
   }
 
   .filter-pill {
-    @apply inline-flex min-h-10 items-center gap-2 rounded-full border border-surface-line bg-surface-muted px-4 py-2 text-sm font-medium text-ink-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800;
+    @apply inline-flex min-h-11 items-center gap-2 rounded-full border border-surface-line bg-surface-muted px-4 py-2.5 text-sm font-semibold text-ink-600 transition-colors hover:border-ink-950 hover:bg-white hover:text-ink-950;
   }
 
   .filter-pill-active {
-    @apply border-brand-200 bg-brand-50 text-brand-800;
+    @apply border-ink-950 bg-ink-950 text-white;
   }
 
   .page-tabs {
-    @apply flex flex-wrap items-center gap-2 border-b border-surface-line pt-1;
+    @apply flex flex-wrap items-center gap-2;
   }
 
   .page-tab {
-    @apply inline-flex min-h-10 items-center rounded-full px-4 text-sm font-medium text-ink-500 transition hover:bg-surface-muted hover:text-ink-800;
+    @apply inline-flex min-h-11 items-center gap-2 rounded-full border border-surface-line bg-white px-4 text-sm font-semibold text-ink-500 transition-colors hover:border-ink-950 hover:text-ink-900;
   }
 
   .page-tab-active {
-    @apply bg-brand-50 text-brand-800;
+    @apply border-ink-950 bg-ink-950 text-white;
   }
 
   .inline-meta {
-    @apply flex flex-wrap gap-x-6 gap-y-4;
+    @apply grid gap-px overflow-hidden rounded-[1.5rem] border border-surface-line bg-surface-line sm:grid-cols-2 xl:grid-cols-4;
   }
 
   .inline-meta-item {
-    @apply min-w-0;
+    @apply min-w-0 bg-white px-4 py-4 sm:px-5;
   }
 
   .inline-meta-label {
@@ -157,7 +161,7 @@ textarea {
   }
 
   .inline-meta-value {
-    @apply mt-1 text-sm font-medium text-ink-900;
+    @apply mt-2 text-sm font-medium text-ink-900;
   }
 
   .data-grid {
@@ -173,11 +177,11 @@ textarea {
   }
 
   .data-grid-table thead {
-    @apply bg-surface-muted;
+    @apply bg-transparent;
   }
 
   .data-grid-head-cell {
-    @apply px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500;
+    @apply px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500;
   }
 
   .data-grid-cell {
@@ -185,11 +189,11 @@ textarea {
   }
 
   .data-grid-table tbody tr {
-    @apply transition-colors duration-150 hover:bg-surface-muted;
+    @apply border-b border-surface-line transition-colors duration-150 hover:bg-surface-muted/70;
   }
 
   .data-table-shell {
-    @apply overflow-hidden rounded-2xl border border-surface-line bg-white shadow-soft;
+    @apply overflow-hidden rounded-[1.75rem] border border-surface-line bg-white;
   }
 
   .table-meta-bar {

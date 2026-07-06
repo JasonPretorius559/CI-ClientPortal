@@ -4,8 +4,6 @@ import { AdminLayout } from "../features/admin/AdminLayout";
 import { AdminMasterfileFormPage } from "../features/admin/pages/AdminMasterfileFormPage";
 import { AdminMasterfileListPage } from "../features/admin/pages/AdminMasterfileListPage";
 import { AdminSetupPage } from "../features/admin/pages/AdminSetupPage";
-import { AdminFinancePage } from "../features/admin/pages/AdminFinancePage";
-import { AdminFinancialSettingsPage } from "../features/admin/pages/AdminFinancialSettingsPage";
 import { AdminUserRegistrationPage } from "../features/admin/pages/AdminUserRegistrationPage";
 import { AdminUsersPage } from "../features/admin/pages/AdminUsersPage";
 import { OpenAiModelSettingsPage } from "../features/admin/pages/OpenAiModelSettingsPage";
@@ -62,8 +60,6 @@ export function AppRouter() {
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/setup" replace />} />
-              <Route path="finance" element={<AdminFinancePage />} />
-              <Route path="financial-settings" element={<AdminFinancialSettingsPage />} />
               <Route path="setup" element={<AdminSetupPage />} />
               <Route path="setup/case-types" element={<AdminMasterfileListPage resourceKey="caseTypes" />} />
               <Route path="setup/case-types/new" element={<AdminMasterfileFormPage resourceKey="caseTypes" />} />

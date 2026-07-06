@@ -106,14 +106,14 @@ function StepIndicator({ currentStep, onStepClick }: { currentStep: number; onSt
             type="button"
             onClick={() => onStepClick(index)}
             className={[
-              "rounded-lg border p-4 text-left transition",
-              isActive ? "border-ink-950 bg-white shadow-sm" : isComplete ? "border-ink-300 bg-white" : "border-ink-200 bg-ink-50",
+              "rounded-[1.5rem] border p-4 text-left transition",
+              isActive ? "border-ink-950 bg-white shadow-[0_14px_30px_rgba(17,17,17,0.06)]" : isComplete ? "border-ink-300 bg-white" : "border-ink-200 bg-white/70",
             ].join(" ")}
           >
             <div className="flex items-center gap-3">
               <span
                 className={[
-                  "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold",
+                  "flex h-9 w-9 items-center justify-center rounded-2xl border text-sm font-semibold",
                   isActive || isComplete ? "border-ink-950 bg-ink-950 text-white" : "border-ink-300 bg-white text-ink-600",
                 ].join(" ")}
               >
@@ -159,18 +159,18 @@ function SelectBox({
       {error ? <Alert tone="error">{error}</Alert> : null}
 
       {isLoading ? (
-        <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-white p-3 text-sm text-ink-600">
+        <div className="flex items-center gap-2 rounded-2xl border border-ink-200 bg-white p-3 text-sm text-ink-600">
           <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
           Loading...
         </div>
       ) : options.length === 0 ? (
-        <div className="rounded-lg border border-ink-200 bg-ink-50 p-3 text-sm text-ink-600">{emptyText}</div>
+        <div className="rounded-2xl border border-ink-200 bg-ink-50 p-3 text-sm text-ink-600">{emptyText}</div>
       ) : (
         <select
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="h-11 w-full rounded-md border border-ink-300 bg-white px-3 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200 disabled:cursor-not-allowed disabled:bg-ink-100 disabled:text-ink-500"
+          className="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200 disabled:cursor-not-allowed disabled:bg-ink-100 disabled:text-ink-500"
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
@@ -411,7 +411,24 @@ export function CaseCreateForm() {
         <Alert tone="error">{mutation.error instanceof ApiError ? mutation.error.message : "Unable to create the case right now."}</Alert>
       ) : null}
 
-      <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
+      <div className="surface-card px-5 py-5 sm:px-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(240px,0.8fr)] lg:items-end">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">Submission Flow</p>
+            <h2 className="mt-3 max-w-2xl text-[1.7rem] font-semibold leading-tight tracking-[-0.05em] text-ink-950 sm:text-[2.2rem]">
+              Build a clean case file with structure first, supporting detail second, and documents last.
+            </h2>
+          </div>
+          <div className="rounded-[1.5rem] border border-surface-line bg-surface-muted p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Current step</p>
+            <p className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-ink-950">{currentStep + 1} / {steps.length}</p>
+            <p className="mt-1 text-sm text-ink-600">{steps[currentStep]?.description}</p>
+          </div>
+        </div>
+        <div className="mt-6">
+          <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
+        </div>
+      </div>
 
       {currentStep === 0 ? (
         <Card>
@@ -498,7 +515,7 @@ export function CaseCreateForm() {
             <TextareaField label="Description" rows={5} error={errors.description?.message} {...register("description")} />
             <TextareaField label="Notes" rows={4} error={errors.notes?.message} {...register("notes")} />
 
-            <Card>
+            <Card className="bg-surface-muted">
               <CardHeader>
                 <CardTitle>What we&apos;ll submit</CardTitle>
               </CardHeader>
@@ -538,7 +555,7 @@ export function CaseCreateForm() {
 
           <CardContent className="space-y-5">
             <div
-              className={["rounded-lg border-2 border-dashed px-6 py-8 transition", dragActive ? "border-ink-950 bg-white" : "border-ink-300 bg-ink-50"].join(" ")}
+              className={["rounded-[1.75rem] border-2 border-dashed px-6 py-10 transition", dragActive ? "border-ink-950 bg-white" : "border-ink-300 bg-ink-50"].join(" ")}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -555,12 +572,12 @@ export function CaseCreateForm() {
               />
 
               <div className="mx-auto flex max-w-md flex-col items-center gap-3 text-center">
-                <div className="rounded-full border border-ink-200 bg-white p-3">
+                <div className="rounded-2xl border border-ink-200 bg-white p-3">
                   <UploadIcon className="h-5 w-5 text-ink-950" aria-hidden="true" />
                 </div>
 
                 <div>
-                  <p className="text-base font-semibold text-ink-950">Upload supporting documents</p>
+                  <p className="text-lg font-semibold tracking-[-0.03em] text-ink-950">Upload supporting documents</p>
                   <p className="mt-1 text-sm text-ink-600">Up to {MAX_FILES} files, 10 MB each, and 25 MB total.</p>
                 </div>
 
@@ -573,7 +590,7 @@ export function CaseCreateForm() {
             {uploadedFiles.length > 0 ? (
               <div className="space-y-2">
                 {uploadedFiles.map((file, index) => (
-                  <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-ink-200 bg-white p-3">
+                  <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-[1.25rem] border border-ink-200 bg-white p-4">
                     <div className="flex min-w-0 items-center gap-3">
                       <Paperclip className="h-4 w-4 shrink-0 text-ink-600" aria-hidden="true" />
                       <div className="min-w-0">
@@ -593,12 +610,12 @@ export function CaseCreateForm() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-ink-200 bg-ink-50 p-4 text-sm text-ink-600">
+              <div className="rounded-[1.5rem] border border-ink-200 bg-ink-50 p-4 text-sm text-ink-600">
                 No files attached yet. You can still create the case without attachments.
               </div>
             )}
 
-            <Card>
+            <Card className="bg-surface-muted">
               <CardHeader>
                 <CardTitle>Final check before submission</CardTitle>
               </CardHeader>
@@ -633,7 +650,8 @@ export function CaseCreateForm() {
         </Card>
       ) : null}
 
-      <div className="sticky bottom-0 -mx-4 border-t border-ink-200 bg-ink-100/95 px-4 py-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+      <div className="sticky bottom-0 z-20 -mx-4 px-4 pb-2 pt-2 sm:static sm:mx-0 sm:p-0">
+        <div className="surface-card border border-surface-line px-4 py-4 sm:px-5">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
           <div>
             {currentStep > 0 ? (
@@ -659,6 +677,7 @@ export function CaseCreateForm() {
               </Button>
             )}
           </div>
+        </div>
         </div>
       </div>
     </form>
