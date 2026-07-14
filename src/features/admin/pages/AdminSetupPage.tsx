@@ -38,8 +38,8 @@ const setupCards = [
     icon: Database,
   },
   {
-    title: "Structured Output Schemas",
-    description: "Manage AI output schemas linked to case type and linked case type combinations.",
+    title: "Analysis Schema Map",
+    description: "View the ten hardcoded output contracts used by the analysis engine.",
     to: "/admin/setup/structured-output-schemas",
     icon: FileJson2,
   },
@@ -64,21 +64,17 @@ export function AdminSetupPage() {
           {setupCards.map((card) => {
             const Icon = card.icon;
             return (
-              <Card key={card.to}>
-                <CardHeader>
-                  <div className="flex items-start gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-ink-200 bg-ink-100">
-                      <Icon className="h-5 w-5 text-ink-700" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0">
-                      <CardTitle>{card.title}</CardTitle>
-                      <p className="mt-1 text-sm leading-6 text-ink-600">{card.description}</p>
-                    </div>
-                  </div>
+              <Card key={card.to} className="flex min-h-56 flex-col">
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-950 text-white">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <CardTitle>{card.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Button asChild variant="secondary">
-                    <Link to={card.to}>Manage</Link>
+                <CardContent className="flex flex-1 flex-col justify-between gap-5">
+                  <p className="text-sm leading-6 text-ink-600">{card.description}</p>
+                  <Button asChild variant="secondary" className="w-fit">
+                    <Link to={card.to}>{card.title === "Analysis Schema Map" ? "View" : "Manage"}</Link>
                   </Button>
                 </CardContent>
               </Card>

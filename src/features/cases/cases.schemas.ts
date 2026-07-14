@@ -23,7 +23,19 @@ export const createCaseSchema = z.object({
   claimantEmail: optionalEmail,
   claimantPhone: z.string().optional(),
   notes: z.string().optional(),
+  intakeData: z.record(z.string(), z.unknown()).optional(),
 });
+
+export type IntakeFieldDefinition = {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "date" | "email" | "phone" | "select" | "boolean";
+  required?: boolean;
+  options?: string[];
+  helpText?: string;
+  includeInAnalysis?: boolean;
+  includeInReport?: boolean;
+};
 
 export type CaseFileMetadata = {
   uploadSessionId: string;

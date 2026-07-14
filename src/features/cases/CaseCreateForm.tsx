@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader, Paperclip, Save, Upload as UploadIcon } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { Building2, FileCheck2, FileSearch, GitCompareArrows, Loader, Paperclip, Presentation, Save, ShieldCheck, Upload as UploadIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../../components/ui/Alert";
@@ -19,7 +19,7 @@ import {
   uploadCaseFile,
   type CaseLookupOption,
 } from "./cases.api";
-import { createCaseSchema, type CaseFileMetadata, type CreateCaseInput } from "./cases.schemas";
+import { createCaseSchema, type CaseFileMetadata, type CreateCaseInput, type IntakeFieldDefinition } from "./cases.schemas";
 import { getCaseId } from "./cases.utils";
 
 const MAX_FILES = 10;
@@ -53,6 +53,82 @@ const steps = [
 
 function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+const productGuidance = {
+  comparison: {
+    eyebrow: "Policy comparison",
+    title: "Compare cover on equal terms",
+    description: "Upload each insurer option so premiums, sums insured, excesses, exclusions, and material differences can be assessed side by side.",
+    evidence: ["Two or more policy schedules or quotations", "Applicable policy wordings", "Current or renewal schedule where relevant"],
+    icon: GitCompareArrows,
+  },
+  policy_analysis: {
+    eyebrow: "Policy analysis",
+    title: "Turn policy wording into clear advice",
+    description: "The analysis reviews insured sections, uninsured exposures, exclusions, conditions, limits, and practical recommendations.",
+    evidence: ["Full policy schedule", "Policy wording and endorsements", "Latest client or risk information"],
+    icon: FileSearch,
+  },
+  record_of_advice: {
+    eyebrow: "Record of advice",
+    title: "Create an advice trail that stands up to review",
+    description: "The output connects client needs, policy evidence, material disclosures, alternatives considered, recommendations, and the reasons behind the advice.",
+    evidence: ["Client needs analysis or fact find", "Recommended policy schedule and wording", "Alternative quotations and adviser notes"],
+    icon: FileCheck2,
+  },
+  agm_pack: {
+    eyebrow: "Sectional title AGM pack",
+    title: "Prepare trustees and owners for the meeting",
+    description: "The pack turns scheme insurance evidence into agenda-ready risks, resolutions, action items, section summaries, and replacement-value guidance.",
+    evidence: ["Current policy schedule and wording", "Latest valuation and claims history", "AGM agenda, prior minutes, and trustee notes"],
+    icon: Presentation,
+  },
+  sectional_title: {
+    eyebrow: "Sectional title",
+    title: "Review the scheme as a connected risk",
+    description: "Scheme-specific review covers buildings, participation quota, replacement values, liability, fidelity, machinery, geysers, SASRIA, and trustee exposures.",
+    evidence: ["Scheme policy schedule and wording", "Latest valuation and replacement-value schedule", "Participation quota or unit schedule"],
+    icon: Building2,
+  },
+} as const;
+
+function ProductPathPanel({ caseType, linkedType }: { caseType: CaseLookupOption | null; linkedType: CaseLookupOption | null }) {
+  const key = linkedType?.workflowType === "comparison" || linkedType?.label.toLowerCase().includes("comparison")
+      ? "comparison"
+      : linkedType?.workflowType === "policy_analysis" || linkedType?.label.toLowerCase().includes("policy analysis")
+        ? "policy_analysis"
+        : linkedType?.workflowType === "record_of_advice" || linkedType?.label.toLowerCase().includes("record of advice")
+          ? "record_of_advice"
+          : linkedType?.workflowType === "agm_pack" || linkedType?.label.toLowerCase().includes("agm")
+            ? "agm_pack"
+            : caseType?.productLine === "sectional_title" || caseType?.sectionalType
+              ? "sectional_title"
+              : null;
+  if (!key) return null;
+  const guidance = productGuidance[key];
+  const Icon = guidance.icon;
+
+  return (
+    <aside className="overflow-hidden rounded-[1.75rem] border border-ink-950 bg-ink-950 text-white shadow-[0_24px_60px_rgba(17,17,17,0.14)]">
+      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60">{guidance.eyebrow}</p>
+          </div>
+          <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em]">{guidance.title}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">{guidance.description}</p>
+        </div>
+        <div className="rounded-[1.35rem] bg-white p-4 text-ink-950">
+          <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4" aria-hidden="true" /> Best evidence set</div>
+          <ul className="mt-3 space-y-2 text-sm text-ink-700">
+            {guidance.evidence.map((item) => <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ink-950" />{item}</li>)}
+          </ul>
+        </div>
+      </div>
+    </aside>
+  );
 }
 
 function isAllowedFile(file: File) {
@@ -194,6 +270,7 @@ export function CaseCreateForm() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState<string | null>(null);
+  const [intakeData, setIntakeData] = useState<Record<string, unknown>>({});
 
   const {
     register,
@@ -236,7 +313,7 @@ export function CaseCreateForm() {
     [caseTypesQuery.data, caseTypeId],
   );
 
-  const requiresEntityType = Boolean(selectedCaseType?.sectionalType);
+  const requiresEntityType = Boolean(selectedCaseType?.sectionalType || selectedCaseType?.productLine === "sectional_title");
 
   const linkedCaseTypesQuery = useQuery({
     queryKey: ["case-lookups", "linked-case-types", caseTypeId],
@@ -259,6 +336,26 @@ export function CaseCreateForm() {
     () => entityTypesQuery.data?.find((option) => option.id === entityTypeId) || null,
     [entityTypesQuery.data, entityTypeId],
   );
+
+  const intakeFields = useMemo(() => {
+    const fields = new Map<string, IntakeFieldDefinition>();
+    for (const field of selectedCaseType?.intakeFields || []) fields.set(field.key, field);
+    for (const field of selectedLinkedCaseType?.intakeFields || []) fields.set(field.key, field);
+    return [...fields.values()];
+  }, [selectedCaseType, selectedLinkedCaseType]);
+
+  useEffect(() => {
+    setIntakeData({});
+  }, [caseTypeId, linkedCaseTypeId]);
+
+  function validateIntakeFields() {
+    const missing = intakeFields.find((field) => field.required && (intakeData[field.key] === undefined || intakeData[field.key] === null || intakeData[field.key] === ""));
+    if (missing) {
+      showToast({ tone: "error", title: `${missing.label} is required.` });
+      return false;
+    }
+    return true;
+  }
 
   const canProceedFromSetup =
     Boolean(caseTitle?.trim()) &&
@@ -283,6 +380,7 @@ export function CaseCreateForm() {
       return createUserCase({
         ...values,
         entityTypeId: selectedEntityType ? selectedEntityType.id : undefined,
+        intakeData,
         files,
       });
     },
@@ -367,6 +465,8 @@ export function CaseCreateForm() {
         showToast({ tone: "error", title: "Add the case description before continuing." });
         return;
       }
+
+      if (!validateIntakeFields()) return;
     }
 
     setCurrentStep((previous) => Math.min(previous + 1, steps.length - 1));
@@ -392,6 +492,11 @@ export function CaseCreateForm() {
     if (requiresEntityType && !selectedEntityType) {
       showToast({ tone: "error", title: "Please select an entity type." });
       setCurrentStep(0);
+      return;
+    }
+
+    if (!validateIntakeFields()) {
+      setCurrentStep(1);
       return;
     }
 
@@ -480,6 +585,8 @@ export function CaseCreateForm() {
               }}
             />
 
+            <ProductPathPanel caseType={selectedCaseType} linkedType={selectedLinkedCaseType} />
+
             {requiresEntityType ? (
               <SelectBox
                 label="Entity type *"
@@ -514,6 +621,33 @@ export function CaseCreateForm() {
           <CardContent className="space-y-5">
             <TextareaField label="Description" rows={5} error={errors.description?.message} {...register("description")} />
             <TextareaField label="Notes" rows={4} error={errors.notes?.message} {...register("notes")} />
+
+            {intakeFields.length > 0 ? (
+              <div className="rounded-[1.5rem] border border-ink-200 bg-ink-50 p-5">
+                <p className="text-sm font-semibold text-ink-950">Case-specific information</p>
+                <p className="mt-1 text-sm text-ink-600">These questions are configured for the selected case type and will be retained with this submission.</p>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {intakeFields.map((field) => (
+                    <label key={field.key} className={field.type === "textarea" ? "space-y-2 md:col-span-2" : "space-y-2"}>
+                      <span className="text-sm font-medium text-ink-950">{field.label}{field.required ? " *" : ""}</span>
+                      {field.helpText ? <span className="block text-xs text-ink-600">{field.helpText}</span> : null}
+                      {field.type === "select" ? (
+                        <select value={String(intakeData[field.key] ?? "")} onChange={(event) => setIntakeData((current) => ({ ...current, [field.key]: event.target.value }))} className="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200">
+                          <option value="">Select an option</option>
+                          {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                      ) : field.type === "boolean" ? (
+                        <input type="checkbox" checked={intakeData[field.key] === true} onChange={(event) => setIntakeData((current) => ({ ...current, [field.key]: event.target.checked }))} className="h-5 w-5 rounded border-ink-300 text-ink-950 focus:ring-ink-500" />
+                      ) : field.type === "textarea" ? (
+                        <textarea value={String(intakeData[field.key] ?? "")} onChange={(event) => setIntakeData((current) => ({ ...current, [field.key]: event.target.value }))} rows={4} className="w-full rounded-xl border border-ink-300 bg-white px-4 py-3 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200" />
+                      ) : (
+                        <input type={field.type === "phone" ? "tel" : field.type} value={String(intakeData[field.key] ?? "")} onChange={(event) => setIntakeData((current) => ({ ...current, [field.key]: field.type === "number" && event.target.value !== "" ? Number(event.target.value) : event.target.value }))} className="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200" />
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <Card className="bg-surface-muted">
               <CardHeader>

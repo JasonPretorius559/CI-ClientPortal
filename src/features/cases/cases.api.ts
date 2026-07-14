@@ -1,5 +1,5 @@
 import { API_BASE_URL, ApiError, apiFetch } from "../../lib/api";
-import type { CaseFileMetadata, CreateCaseInput } from "./cases.schemas";
+import type { CaseFileMetadata, CreateCaseInput, IntakeFieldDefinition } from "./cases.schemas";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -30,7 +30,33 @@ export type CaseLookupOption = {
   label: string;
   isActive: boolean;
   sectionalType: boolean;
+  productLine: "personal" | "commercial" | "sectional_title" | "other" | undefined;
+  workflowType: "comparison" | "policy_analysis" | "record_of_advice" | "agm_pack" | "other" | undefined;
+  intakeFields: IntakeFieldDefinition[];
 };
+
+function normalizeIntakeFields(value: unknown): IntakeFieldDefinition[] {
+  if (!Array.isArray(value)) return [];
+  const allowedTypes = new Set<IntakeFieldDefinition["type"]>(["text", "textarea", "number", "date", "email", "phone", "select", "boolean"]);
+
+  return value.flatMap((candidate) => {
+    if (!isRecord(candidate)) return [];
+    const key = readString(candidate, ["key"]);
+    const label = readString(candidate, ["label"]);
+    const type = readString(candidate, ["type"]) as IntakeFieldDefinition["type"];
+    if (!key || !label || !allowedTypes.has(type)) return [];
+    return [{
+      key,
+      label,
+      type,
+      required: candidate.required === true,
+      options: Array.isArray(candidate.options) ? candidate.options.filter((option): option is string => typeof option === "string") : undefined,
+      helpText: readString(candidate, ["helpText"]) || undefined,
+      includeInAnalysis: candidate.includeInAnalysis !== false,
+      includeInReport: candidate.includeInReport !== false,
+    }];
+  });
+}
 
 function getArrayFromPayload(response: unknown, keys: string[]) {
   if (Array.isArray(response)) return response;
@@ -111,6 +137,9 @@ function normalizeLookupResponse(response: unknown, keys: string[]): CaseLookupO
         label,
         isActive: item.isActive !== false,
         sectionalType: item.sectionalType === true,
+        productLine: (readString(item, ["productLine"]) as CaseLookupOption["productLine"]) || undefined,
+        workflowType: (readString(item, ["workflowType"]) as CaseLookupOption["workflowType"]) || undefined,
+        intakeFields: normalizeIntakeFields(item.intakeFields),
       };
     })
     .filter((item): item is CaseLookupOption => Boolean(item));
@@ -263,6 +292,29 @@ export function getCaseAnalysisStatus(caseId: string) {
     method: "GET",
     cache: "no-store",
   });
+}
+
+export type CaseComment = {
+  _id: string;
+  body: string;
+  visibility: "shared" | "internal";
+  createdAt: string;
+  authorId?: { name?: string; email?: string } | string;
+};
+
+function commentsFromResponse(response: unknown): CaseComment[] {
+  if (!isRecord(response)) return [];
+  const data = isRecord(response.data) ? response.data : response;
+  return Array.isArray(data.comments) ? data.comments as CaseComment[] : [];
+}
+
+export async function getCaseComments(caseId: string) {
+  const response = await apiFetch<unknown>(`/api/auth/user-cases/${encodeURIComponent(caseId)}/comments`, { method: "GET", cache: "no-store" });
+  return commentsFromResponse(response);
+}
+
+export function createCaseComment(caseId: string, body: string) {
+  return apiFetch<unknown>(`/api/auth/user-cases/${encodeURIComponent(caseId)}/comments`, { method: "POST", body: { body, visibility: "shared" } });
 }
 
 export function getCaseLogs(caseId: string) {

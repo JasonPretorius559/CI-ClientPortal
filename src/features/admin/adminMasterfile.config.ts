@@ -29,7 +29,7 @@ export const adminMasterfileConfigs: Record<AdminMasterfileResourceKey, AdminMas
     singularLabel: "Linked Case Type",
     endpoint: "/api/admin/linked-case-types",
     routePath: "linked-case-types",
-    description: "Manage case sub-types such as comparison, policy analysis, record of advice, and AGM pack.",
+    description: "Manage supported linked products: Comparison, Policy Analysis, Record of Advice, and sectional-title AGM Pack.",
     listKeys: ["linkedCaseTypes", "linkedCaseType", "items", "records", "data"],
     objectKeys: ["linkedCaseType", "record", "item", "data"],
     requiresCaseType: true,

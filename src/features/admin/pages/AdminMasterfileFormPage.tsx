@@ -13,12 +13,14 @@ import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton";
 import { PageHeader } from "../../../components/ui/PageHeader";
 import { useToast } from "../../../components/ui/toast-context";
 import { AdminPageAccess } from "../AdminPageAccess";
+import { AdminIntakeFieldsEditor } from "../AdminIntakeFieldsEditor";
 import {
   createAdminMasterfileRecord,
   getAdminMasterfileRecord,
   listAdminMasterfileRecords,
   updateAdminMasterfileRecord,
 } from "../adminMasterfile.api";
+import type { IntakeFieldDefinition } from "../adminMasterfile.api";
 import { adminMasterfileConfigs, getAdminMasterfileConfig, type AdminMasterfileResourceKey } from "../adminMasterfile.config";
 import { getRecordId } from "../adminPayload.utils";
 
@@ -31,6 +33,9 @@ type FormState = {
   description: string;
   isActive: boolean;
   caseType: string;
+  intakeFields: IntakeFieldDefinition[];
+  productLine: string;
+  workflowType: string;
 };
 
 const emptyForm: FormState = {
@@ -38,6 +43,9 @@ const emptyForm: FormState = {
   description: "",
   isActive: true,
   caseType: "",
+  intakeFields: [],
+  productLine: "other",
+  workflowType: "other",
 };
 
 export function AdminMasterfileFormPage({ resourceKey }: AdminMasterfileFormPageProps) {
@@ -50,6 +58,8 @@ export function AdminMasterfileFormPage({ resourceKey }: AdminMasterfileFormPage
   const [form, setForm] = useState<FormState>(emptyForm);
   const [nameError, setNameError] = useState("");
   const [caseTypeError, setCaseTypeError] = useState("");
+  const [intakeFieldsError, setIntakeFieldsError] = useState("");
+  const supportsIntakeFields = config.resourceKey === "caseTypes" || config.resourceKey === "linkedCaseTypes";
 
   const recordQuery = useQuery({
     queryKey: ["admin", "masterfiles", config.resourceKey, id ?? "new"],
@@ -74,6 +84,9 @@ export function AdminMasterfileFormPage({ resourceKey }: AdminMasterfileFormPage
       description: recordQuery.data.description || "",
       isActive: recordQuery.data.isActive !== false,
       caseType: recordQuery.data.caseType || "",
+      intakeFields: recordQuery.data.intakeFields || [],
+      productLine: recordQuery.data.productLine || "other",
+      workflowType: recordQuery.data.workflowType || "other",
     });
   }, [isEditing, recordQuery.data]);
 
@@ -81,9 +94,15 @@ export function AdminMasterfileFormPage({ resourceKey }: AdminMasterfileFormPage
     mutationFn: async () => {
       const nextNameError = form.name.trim() ? "" : "Name is required.";
       const nextCaseTypeError = config.requiresCaseType && !form.caseType.trim() ? "Case type is required." : "";
+      const invalidIntakeField = form.intakeFields.find((field) => !field.key.trim() || !field.label.trim() || (field.type === "select" && field.options.length === 0));
+      const duplicateIntakeKeys = new Set(form.intakeFields.map((field) => field.key.trim()).filter(Boolean)).size !== form.intakeFields.map((field) => field.key.trim()).filter(Boolean).length;
+      const nextIntakeFieldsError = invalidIntakeField
+        ? "Each intake question needs a label, data key, and options for select lists."
+        : duplicateIntakeKeys ? "Each intake question must use a unique data key." : "";
       setNameError(nextNameError);
       setCaseTypeError(nextCaseTypeError);
-      if (nextNameError || nextCaseTypeError) throw new Error("Please complete the required fields.");
+      setIntakeFieldsError(nextIntakeFieldsError);
+      if (nextNameError || nextCaseTypeError || nextIntakeFieldsError) throw new Error("Please complete the required fields.");
 
       const payload: Record<string, unknown> = {
         name: form.name.trim(),
@@ -91,6 +110,9 @@ export function AdminMasterfileFormPage({ resourceKey }: AdminMasterfileFormPage
         isActive: form.isActive,
       };
       if (config.requiresCaseType) payload.caseType = form.caseType;
+      if (config.resourceKey === "caseTypes") payload.productLine = form.productLine;
+      if (config.resourceKey === "linkedCaseTypes") payload.workflowType = form.workflowType;
+      if (supportsIntakeFields) payload.intakeFields = form.intakeFields.map((field) => ({ ...field, key: field.key.trim(), label: field.label.trim(), helpText: field.helpText.trim(), options: field.options.map((option) => option.trim()).filter(Boolean) }));
 
       return isEditing && id
         ? updateAdminMasterfileRecord(config, id, payload)
@@ -188,11 +210,50 @@ export function AdminMasterfileFormPage({ resourceKey }: AdminMasterfileFormPage
                 />
               ) : null}
 
+              {config.resourceKey === "caseTypes" ? (
+                <SelectField
+                  label="Product line"
+                  value={form.productLine}
+                  onChange={(event) => setForm((current) => ({ ...current, productLine: event.target.value }))}
+                  options={[
+                    { label: "Personal lines", value: "personal" },
+                    { label: "Commercial lines", value: "commercial" },
+                    { label: "Sectional title", value: "sectional_title" },
+                    { label: "Other / custom", value: "other" },
+                  ]}
+                />
+              ) : null}
+
+              {config.resourceKey === "linkedCaseTypes" ? (
+                <SelectField
+                  label="Analysis workflow"
+                  value={form.workflowType}
+                  onChange={(event) => setForm((current) => ({ ...current, workflowType: event.target.value }))}
+                  options={[
+                    { label: "Comparison", value: "comparison" },
+                    { label: "Policy analysis", value: "policy_analysis" },
+                    { label: "Record of Advice", value: "record_of_advice" },
+                    { label: "AGM Pack", value: "agm_pack" },
+                  ]}
+                />
+              ) : null}
+
               <TextareaField
                 label="Description"
                 value={form.description}
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               />
+
+              {supportsIntakeFields ? (
+                <AdminIntakeFieldsEditor
+                  fields={form.intakeFields}
+                  error={intakeFieldsError}
+                  onChange={(intakeFields) => {
+                    setForm((current) => ({ ...current, intakeFields }));
+                    setIntakeFieldsError("");
+                  }}
+                />
+              ) : null}
 
               <label className="flex items-center gap-3 rounded-md border border-ink-200 bg-ink-50 px-3 py-3 text-sm font-medium text-ink-800">
                 <input

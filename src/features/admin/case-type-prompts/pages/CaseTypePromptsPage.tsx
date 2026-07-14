@@ -176,12 +176,7 @@ export function CaseTypePromptsPage() {
                               disabled={!id || deleteMutation.isPending}
                               isLoading={deleteMutation.isPending}
                               onClick={() => {
-                                if (
-                                  window.confirm(
-                                    "Delete this case type prompt?",
-                                  )
-                                )
-                                  deleteMutation.mutate(id);
+                                if (window.confirm("Delete this case type prompt?")) deleteMutation.mutate(id);
                               }}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />

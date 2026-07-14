@@ -11,10 +11,8 @@ export function AdminLayout() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 border-b border-ink-200 pb-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <Link to="/admin/setup" className="text-sm font-semibold uppercase tracking-[0.18em] text-ink-500 no-underline">
-            Admin
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink-950">Masterfiles and setup</h1>
+          <Link to="/admin/setup" className="text-[10px] font-bold uppercase tracking-[0.18em] text-warning-700 no-underline">Admin</Link>
+          <h1 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-ink-950">Masterfiles and setup</h1>
         </div>
         <nav className="flex flex-wrap gap-2" aria-label="Admin navigation">
           {adminTabs.map((item) => {
@@ -25,8 +23,10 @@ export function AdminLayout() {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-md border border-ink-300 bg-white px-3 py-2 text-sm font-semibold text-ink-800 no-underline shadow-sm transition hover:bg-ink-100",
-                    isActive && "border-ink-950 bg-ink-950 text-white hover:bg-ink-900",
+                    "inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold no-underline shadow-sm transition",
+                    isActive
+                      ? "border-ink-950 bg-ink-950 text-white hover:bg-ink-900"
+                      : "border-ink-300 bg-white text-ink-800 hover:bg-ink-100",
                   )
                 }
               >

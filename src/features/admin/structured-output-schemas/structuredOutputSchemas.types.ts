@@ -1,4 +1,4 @@
-export type StructuredOutputSchemaStatus = "draft" | "published" | "archived";
+export type StructuredOutputSchemaStatus = "system";
 
 export type StructuredOutputSchemaField = {
   path: string;
@@ -8,7 +8,6 @@ export type StructuredOutputSchemaField = {
   required: boolean;
   description?: string;
 };
-
 export type StructuredOutputSchema = {
   id?: string;
   _id?: string;
@@ -24,7 +23,7 @@ export type StructuredOutputSchema = {
   linkedCaseTypeNameSnapshot?: string;
   status: StructuredOutputSchemaStatus;
   isActive: boolean;
-  source?: "admin";
+  source?: "code";
   jsonSchema?: Record<string, unknown>;
   fields?: StructuredOutputSchemaField[];
   tree?: unknown[];
@@ -33,18 +32,4 @@ export type StructuredOutputSchema = {
   createdAt?: string;
   updatedAt?: string;
   publishedAt?: string;
-};
-
-export type SaveStructuredOutputSchemaInput = {
-  name: string;
-  key: string;
-  description?: string;
-  version: number;
-  caseType: string;
-  linkedCaseType: string;
-  status?: StructuredOutputSchemaStatus;
-  isActive: boolean;
-  jsonSchema: Record<string, unknown>;
-  systemPromptHint?: string;
-  userPromptHint?: string;
 };

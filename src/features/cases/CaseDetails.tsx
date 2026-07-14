@@ -35,6 +35,7 @@ import {
   type CaseAnalysisStatusDetail,
 } from "./analysisStatus.utils";
 import { CaseStatusBadge } from "./CaseStatusBadge";
+import { CaseCollaboration } from "./CaseCollaboration";
 import {
   analyzeCase,
   cancelCaseAnalysis,
@@ -198,24 +199,15 @@ function asList(value: unknown) {
 function AnalysisBanner({
   detail,
   duplicate,
-  insufficientCredits,
 }: {
   detail: CaseAnalysisStatusDetail;
   duplicate: boolean;
-  insufficientCredits: boolean;
 }) {
   const status = detail.status;
   const failureMessage = getFailureMessage(detail);
   const progressMessage = getProgressMessage(detail);
 
-  const state = insufficientCredits
-    ? {
-        title: "Analysis limit reached",
-        message: "Please purchase more analysis credits to continue.",
-        tone: "error" as const,
-        Icon: AlertTriangle,
-      }
-    : duplicate
+  const state = duplicate
       ? {
           title: "Existing analysis reused",
           message: "No new analysis job was queued because this input was already analysed.",
@@ -502,7 +494,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [duplicateReused, setDuplicateReused] = useState(false);
-  const [insufficientCredits, setInsufficientCredits] = useState(false);
   const inputHash = "";
   const model = "";
   const lastNotifiedStatusRef = useRef<string | null>(null);
@@ -623,7 +614,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       const duplicate = data.duplicateAnalysis === true;
       const returnedAnalysisId = toDisplayValue(data.analysisId);
 
-      setInsufficientCredits(false);
       setDuplicateReused(duplicate);
       if (returnedAnalysisId) setSelectedVersionId(returnedAnalysisId);
       if (result.status === 202) setPollingEnabled(true);
@@ -632,14 +622,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
         statusQuery.refetch(),
         versionsQuery.refetch(),
       ]);
-    },
-    onError: (error) => {
-      const message =
-        error instanceof ApiError ? error.message : "Unable to run analysis.";
-      setInsufficientCredits(
-        message.toLowerCase().includes("analysis limit") ||
-          message.toLowerCase().includes("credit"),
-      );
     },
   });
 
@@ -723,7 +705,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       <AnalysisBanner
         detail={analysisDetail}
         duplicate={duplicateReused}
-        insufficientCredits={insufficientCredits}
       />
       {analyzeMutation.isError ? (
         <Alert tone="error">
@@ -794,6 +775,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
               )}
             </div>
           </section>
+          {caseId ? <CaseCollaboration caseId={caseId} /> : null}
         </main>
 
         <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
@@ -807,7 +789,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                 type="button"
                 onClick={() => analyzeMutation.mutate()}
                 isLoading={analyzeMutation.isPending || (running && !cancelMutation.isPending)}
-                disabled={!caseId || running || insufficientCredits || cancelMutation.isPending}
+                disabled={!caseId || running || cancelMutation.isPending}
                 className="w-full"
               >
                 {!analyzeMutation.isPending && !running ? (

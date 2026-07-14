@@ -21,15 +21,17 @@ export function Sidebar() {
 
   return (
     <aside className="hidden fixed inset-y-0 left-0 z-20 w-72 shrink-0 overflow-y-auto border-r border-surface-line bg-[#f3f3f3] px-5 py-6 lg:flex lg:flex-col">
-      <div className="flex items-center gap-3 px-1 py-2">
-        <img src={cloudLogo} alt="" className="h-11 w-11 shrink-0 object-contain" aria-hidden="true" />
+      <div className="flex items-center gap-3 px-2">
+        <img src={cloudLogo} alt="" className="h-11 w-11 object-contain" aria-hidden="true" />
         <div className="min-w-0">
-          <p className="text-lg font-bold tracking-tight text-ink-950">Cloud Insure</p>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Operations portal</p>
+          <p className="text-base font-bold tracking-[-0.03em] text-ink-950">Cloud Insure</p>
+          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Operations portal</p>
         </div>
       </div>
-      <div className="mt-8 flex-1 border-t border-surface-line pt-5">
-        <nav className="space-y-1" aria-label="Main navigation">
+
+      <div className="mt-8 flex-1">
+        <p className="px-3 text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Workspace</p>
+        <nav className="mt-3 space-y-1" aria-label="Main navigation">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (

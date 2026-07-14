@@ -68,8 +68,6 @@ const roleOptions = [
 
 
 const formRoleOptions = roleOptions.slice(1);
-
-
 function validatePassword(password: string, required: boolean) {
   if (!password && !required) return "";
   if (password.length < 8) return "Password must be at least 8 characters.";
@@ -147,16 +145,16 @@ function UserFormDialog({
 
   return (
     <>
-      <div className="dialog-overlay" onClick={onClose} aria-hidden="true" />
-      <div className="dialog-frame">
+      <div className="dialog-overlay" aria-hidden="true" onClick={onClose} />
+      <div className="dialog-frame" role="dialog" aria-modal="true" aria-labelledby="user-form-title">
         <Card className="dialog-shell">
           <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div>
-              <CardTitle>{isEditing ? "Edit User" : "Create User"}</CardTitle>
-              <p className="mt-1 text-sm leading-6 text-ink-600">{isEditing ? editingUser?.email : "Add a portal account with a temporary password."}</p>
+              <CardTitle id="user-form-title">{isEditing ? "Edit user" : "Create user"}</CardTitle>
+              <p className="mt-2 text-sm text-ink-600">{isEditing ? editingUser?.email : "Add a portal account with a temporary password."}</p>
             </div>
-            <Button variant="ghost" className="px-3" aria-label="Close" onClick={onClose}>
-              <X className="h-4 w-4" aria-hidden="true" />
+            <Button variant="ghost" className="px-2" aria-label="Close user form" onClick={onClose}>
+              <X className="h-5 w-5" aria-hidden="true" />
             </Button>
           </CardHeader>
           <CardContent className="pt-6">
@@ -189,7 +187,7 @@ function UserFormDialog({
                 onChange={(event) => onChange({ ...form, password: event.target.value })}
               />
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div>
                 <SelectField
                   label="System role"
                   value={form.role}
@@ -197,7 +195,6 @@ function UserFormDialog({
                   options={formRoleOptions}
                   onChange={(event) => onChange({ ...form, role: event.target.value as AdminUserRole })}
                 />
-                
               </div>
 
               <div className="flex flex-col-reverse gap-3 border-t border-ink-200 pt-5 sm:flex-row sm:justify-end">
@@ -500,7 +497,6 @@ export function AdminUsersPage() {
                     <DataGridHeaderCell>User</DataGridHeaderCell>
                     <DataGridHeaderCell>Role</DataGridHeaderCell>
                     <DataGridHeaderCell>Status</DataGridHeaderCell>
-                    <DataGridHeaderCell>Usage</DataGridHeaderCell>
                     <DataGridHeaderCell>Last login</DataGridHeaderCell>
                     <DataGridHeaderCell className="text-right">Actions</DataGridHeaderCell>
                   </tr>
@@ -533,9 +529,6 @@ export function AdminUsersPage() {
                         </DataGridCell>
                         <DataGridCell>
                           <Badge tone={statusTone(userRecord.status)}>{userRecord.status}</Badge>
-                        </DataGridCell>
-                        <DataGridCell className="text-ink-600">
-                          {userRecord.analysisUsed ?? 0} / {userRecord.analysisLimit ?? 0}
                         </DataGridCell>
                         <DataGridCell className="text-ink-600">{formatDate(userRecord.lastLoginAt)}</DataGridCell>
                         <DataGridCell>
@@ -579,7 +572,7 @@ export function AdminUsersPage() {
           </DataGrid>
         ) : null}
 
-        {isFormOpen ? (
+      {isFormOpen ? (
           <UserFormDialog
             editingUser={editingUser}
             errors={formErrors}
@@ -592,7 +585,8 @@ export function AdminUsersPage() {
             onClose={closeForm}
             onSubmit={handleFormSubmit}
           />
-        ) : null}
+      ) : null}
+
       </PageShell>
     </AdminPageAccess>
   );

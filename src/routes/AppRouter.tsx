@@ -9,7 +9,6 @@ import { AdminUsersPage } from "../features/admin/pages/AdminUsersPage";
 import { OpenAiModelSettingsPage } from "../features/admin/pages/OpenAiModelSettingsPage";
 import { CaseTypePromptEditorPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptEditorPage";
 import { CaseTypePromptsPage } from "../features/admin/case-type-prompts/pages/CaseTypePromptsPage";
-import { StructuredOutputSchemaEditorPage } from "../features/admin/structured-output-schemas/pages/StructuredOutputSchemaEditorPage";
 import { StructuredOutputSchemasPage } from "../features/admin/structured-output-schemas/pages/StructuredOutputSchemasPage";
 import { AdminRoute } from "../features/auth/AdminRoute";
 import { useAuth } from "../features/auth/useAuth";
@@ -77,8 +76,6 @@ export function AppRouter() {
               <Route path="setup/users" element={<AdminUsersPage />} />
               <Route path="setup/users/new" element={<AdminUserRegistrationPage />} />
               <Route path="setup/structured-output-schemas" element={<StructuredOutputSchemasPage />} />
-              <Route path="setup/structured-output-schemas/new" element={<StructuredOutputSchemaEditorPage />} />
-              <Route path="setup/structured-output-schemas/:id" element={<StructuredOutputSchemaEditorPage />} />
             </Route>
           </Route>
           <Route path="/profile" element={<ProfilePage />} />

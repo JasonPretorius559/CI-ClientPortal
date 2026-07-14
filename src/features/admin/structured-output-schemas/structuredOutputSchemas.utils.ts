@@ -3,10 +3,7 @@ import type { StructuredOutputSchema, StructuredOutputSchemaField, StructuredOut
 
 function readStatus(value: unknown): StructuredOutputSchemaStatus {
   const status = readString(value, ["status", "state"]).toLowerCase();
-  if (status === "draft" || status === "published" || status === "archived") return status;
-  if (isRecord(value) && value.isArchived === true) return "archived";
-  if (isRecord(value) && value.publishedAt) return "published";
-  return "draft";
+  return status === "system" ? "system" : "system";
 }
 
 function normalizeField(item: unknown): StructuredOutputSchemaField | null {
@@ -56,7 +53,7 @@ export function normalizeStructuredOutputSchema(payload: unknown): StructuredOut
     linkedCaseTypeNameSnapshot: readString(container, ["linkedCaseTypeNameSnapshot"]) || undefined,
     status: readStatus(container),
     isActive: readBoolean(container, ["isActive", "active"], true),
-    source: "admin",
+    source: "code",
     jsonSchema: isRecord(container.jsonSchema) ? container.jsonSchema : isRecord(container.schema) ? container.schema : undefined,
     fields,
     tree: readArrayFromPayload(container, ["tree", "fieldTree"]),

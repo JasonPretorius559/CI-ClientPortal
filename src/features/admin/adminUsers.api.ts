@@ -10,9 +10,6 @@ export type AdminUser = {
   email: string;
   role: AdminUserRole;
   status: AdminUserStatus;
-  analysisLimit?: number;
-  analysisUsed?: number;
-  analysisRemaining?: number;
   lastLoginAt?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -72,9 +69,6 @@ function normalizeUser(value: unknown): AdminUser | null {
     email,
     role: readRole(value),
     status: readStatus(value),
-    analysisLimit: readNumber(value, ["analysisLimit"]) ?? undefined,
-    analysisUsed: readNumber(value, ["analysisUsed"]) ?? undefined,
-    analysisRemaining: readNumber(value, ["analysisRemaining"]) ?? undefined,
     lastLoginAt: readString(value, ["lastLoginAt"]) || undefined,
     createdAt: readString(value, ["createdAt"]) || undefined,
     updatedAt: readString(value, ["updatedAt"]) || undefined,
