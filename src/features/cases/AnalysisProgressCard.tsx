@@ -6,14 +6,18 @@ import {
   getStageLabel,
   type CaseAnalysisStatusDetail,
 } from "./analysisStatus.utils";
+import { useAnalysisStreamStatus } from "./AnalysisProgressStreamBridge";
 
 const STEP_ORDER = [
   "extracting_documents",
   "queued",
+  "extracting_key_facts",
+  "key_facts_ready",
   "preparing_documents",
   "splitting_documents",
   "analyzing_chunks",
   "reducing_analysis",
+  "escalating_analysis",
   "saving_analysis",
   "retrying",
   "completed",
@@ -36,6 +40,7 @@ export function AnalysisProgressCard({
   detail: CaseAnalysisStatusDetail;
   active: boolean;
 }) {
+  const streamStatus = useAnalysisStreamStatus();
   const normalized = detail.status.toLowerCase();
   const completed =
     normalized === "completed" ||
@@ -52,6 +57,16 @@ export function AnalysisProgressCard({
     detail.totalChunks > 0
       ? `${detail.completedChunks} of ${detail.totalChunks} sections complete`
       : null;
+  const preliminary = detail.preliminaryKeyFacts;
+  const preliminarySummary = preliminary
+    ? [
+        typeof preliminary.factCount === "number" ? `${preliminary.factCount} facts` : null,
+        typeof preliminary.riskCount === "number" ? `${preliminary.riskCount} risks` : null,
+        typeof preliminary.missingInformationCount === "number"
+          ? `${preliminary.missingInformationCount} missing items`
+          : null,
+      ].filter((value): value is string => Boolean(value))
+    : [];
 
   if (!active && !completed && !failed && !cancelled) {
     return null;
@@ -61,7 +76,7 @@ export function AnalysisProgressCard({
     if (step === "retrying" && stage !== "retrying") return false;
     if (step === "extracting_documents" && detail.documentExtraction?.pdfCount === 0) return false;
     if (
-      ["preparing_documents", "splitting_documents", "analyzing_chunks", "reducing_analysis", "saving_analysis"].includes(step) &&
+      ["preparing_documents", "splitting_documents", "analyzing_chunks", "reducing_analysis", "escalating_analysis", "saving_analysis"].includes(step) &&
       detail.documentExtraction?.stage === "extracting"
     ) {
       return false;
@@ -93,11 +108,22 @@ export function AnalysisProgressCard({
               ) : null}
               {!failed && !completed && !cancelled ? (
                 <p className="mt-1 text-xs text-ink-500">
-                  We check progress every few seconds. You can leave this page open or come back later.
+                  {streamStatus === "open"
+                    ? "Live updates are connected. You can leave this page open or come back later."
+                    : "Live updates are reconnecting; progress checks continue automatically."}
                 </p>
               ) : null}
             </div>
           </div>
+
+          {preliminarySummary.length ? (
+            <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">
+              <p className="font-semibold">Preliminary key facts are ready</p>
+              <p className="mt-1 text-xs text-sky-800">
+                {preliminarySummary.join(" · ")}. The complete structured report is still being validated.
+              </p>
+            </div>
+          ) : null}
 
           <div
             className="h-3 overflow-hidden rounded-full bg-ink-100"

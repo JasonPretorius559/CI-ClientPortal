@@ -6,6 +6,7 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { UserMenu } from "../components/layout/UserMenu";
 import { Button } from "../components/ui/Button";
 import { GlobalAnalysisProgressBanner } from "../features/cases/GlobalAnalysisProgressBanner";
+import { AnalysisProgressStreamBridge } from "../features/cases/AnalysisProgressStreamBridge";
 
 export function PortalLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -46,6 +47,7 @@ export function PortalLayout() {
       </div>
 
       <GlobalAnalysisProgressBanner />
+      <AnalysisProgressStreamBridge />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { useToast } from "../../components/ui/toast-context";
 import { generateCaseReport } from "../reports/reports.api";
 import { downloadBlob } from "../reports/reportExport";
 import { AnalysisProgressCard } from "./AnalysisProgressCard";
+import { useAnalysisStreamStatus } from "./AnalysisProgressStreamBridge";
 import {
   getActiveAnalysisProgress,
   type ActiveAnalysisProgress,
@@ -141,6 +142,8 @@ function mergeCaseProgressDetail(
     completedChunks: activeProgress.completedChunks,
     totalChunks: activeProgress.totalChunks,
     currentChunkIndex: activeProgress.currentChunkIndex,
+    keyFactsReadyAt: activeProgress.keyFactsReadyAt,
+    preliminaryKeyFacts: activeProgress.preliminaryKeyFacts,
   };
 }
 
@@ -491,6 +494,7 @@ function SelectedAnalysis({
 export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const streamStatus = useAnalysisStreamStatus();
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [duplicateReused, setDuplicateReused] = useState(false);
@@ -533,13 +537,13 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     queryKey: ["case-analysis-status", caseId],
     queryFn: () => getCaseAnalysisStatus(caseId),
     enabled: Boolean(caseId),
-    refetchInterval: pollingEnabled ? 4000 : false,
+    refetchInterval: pollingEnabled ? (streamStatus === "open" ? 30_000 : 4000) : false,
   });
   const activeProgressQuery = useQuery({
     queryKey: ["analysis-progress", "active"],
     queryFn: getActiveAnalysisProgress,
     enabled: Boolean(caseId) && pollingEnabled,
-    refetchInterval: pollingEnabled ? 4000 : false,
+    refetchInterval: pollingEnabled ? (streamStatus === "open" ? 30_000 : 4000) : false,
   });
   const versionsQuery = useQuery({
     queryKey: ["case-analysis-versions", caseId],

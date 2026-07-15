@@ -5,6 +5,7 @@ import { AlertTriangle, Bot, ExternalLink, Loader2 } from "lucide-react";
 import { useToast } from "../../components/ui/toast-context";
 import { getActiveAnalysisProgress } from "./analysisProgress.api";
 import { getStageLabel } from "./analysisStatus.utils";
+import { useAnalysisStreamStatus } from "./AnalysisProgressStreamBridge";
 
 function caseHref(caseId: string) {
   return `/cases/${encodeURIComponent(caseId)}`;
@@ -12,11 +13,12 @@ function caseHref(caseId: string) {
 
 export function GlobalAnalysisProgressBanner() {
   const { showToast } = useToast();
+  const streamStatus = useAnalysisStreamStatus();
   const seenFailuresRef = useRef<Set<string>>(new Set());
   const progressQuery = useQuery({
     queryKey: ["analysis-progress", "active"],
     queryFn: getActiveAnalysisProgress,
-    refetchInterval: 4000,
+    refetchInterval: streamStatus === "open" ? 30_000 : 4000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
     retry: 1,
@@ -88,6 +90,14 @@ export function GlobalAnalysisProgressBanner() {
                 {hasMultiple ? ` + ${activeItems.length - 1} more` : ""}
               </p>
               <p className="mt-2 line-clamp-3 text-sm text-ink-700">{primary.message}</p>
+              <p className="mt-1 text-[11px] font-medium text-emerald-700">
+                {streamStatus === "open" ? "● Live updates connected" : "○ Reconnecting live updates"}
+              </p>
+              {primary.preliminaryKeyFacts ? (
+                <p className="mt-2 text-xs font-medium text-sky-700">
+                  Preliminary key facts are ready while the full report is finalised.
+                </p>
+              ) : null}
               {primary.analysisError ? (
                 <p className="mt-2 line-clamp-3 text-xs text-red-700">{primary.analysisError}</p>
               ) : null}

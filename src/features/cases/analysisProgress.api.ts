@@ -62,6 +62,10 @@ export type ActiveAnalysisProgress = {
   completedChunks: number | null;
   totalChunks: number | null;
   currentChunkIndex: number | null;
+  keyFactsReadyAt: string | null;
+  preliminaryKeyFacts: Record<string, unknown> | null;
+  timings: Record<string, unknown> | null;
+  modelRouting: Record<string, unknown> | null;
 };
 
 function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
@@ -93,6 +97,10 @@ function normalizeProgressItem(item: unknown): ActiveAnalysisProgress | null {
     completedChunks: readNumber(item, ["completedChunks"]),
     totalChunks: readNumber(item, ["totalChunks"]),
     currentChunkIndex: readNumber(item, ["currentChunkIndex"]),
+    keyFactsReadyAt: readString(item, ["keyFactsReadyAt"]) || null,
+    preliminaryKeyFacts: isRecord(item.preliminaryKeyFacts) ? item.preliminaryKeyFacts : null,
+    timings: isRecord(item.timings) ? item.timings : null,
+    modelRouting: isRecord(item.modelRouting) ? item.modelRouting : null,
   };
 }
 
@@ -103,6 +111,10 @@ export async function getActiveAnalysisProgress() {
     skipAuthRedirect: true,
   });
 
+  return normalizeActiveAnalysisProgress(response);
+}
+
+export function normalizeActiveAnalysisProgress(response: unknown) {
   return getPayloadItems(response)
     .map(normalizeProgressItem)
     .filter((item): item is ActiveAnalysisProgress => Boolean(item));

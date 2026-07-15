@@ -53,6 +53,8 @@ export type CaseAnalysisStatusDetail = {
   completedChunks?: number | null;
   totalChunks?: number | null;
   currentChunkIndex?: number | null;
+  keyFactsReadyAt?: string | null;
+  preliminaryKeyFacts?: Record<string, unknown> | null;
 };
 
 const ACTIVE_STATUSES = new Set([
@@ -79,6 +81,10 @@ export function getStageLabel(stage: string) {
       return "Queued";
     case "preparing_documents":
       return "Preparing documents";
+    case "extracting_key_facts":
+      return "Extracting key facts";
+    case "key_facts_ready":
+      return "Key facts ready";
     case "splitting_documents":
       return "Splitting documents";
     case "analyzing_chunks":
@@ -87,6 +93,8 @@ export function getStageLabel(stage: string) {
       return "Combining findings";
     case "saving_analysis":
       return "Saving analysis";
+    case "escalating_analysis":
+      return "Accuracy recheck";
     case "cancelled":
       return "Cancelled";
     case "retrying":
