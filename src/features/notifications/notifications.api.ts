@@ -1,5 +1,5 @@
 import { API_BASE_URL, apiFetch } from "../../lib/api";
-import type { NotificationPreference, PortalNotification } from "./notifications.types";
+import type { InformationRequest, NotificationPreference, PortalNotification } from "./notifications.types";
 
 type Envelope<T> = { data: T };
 const data = <T,>(value: Envelope<T>) => value.data;
@@ -67,4 +67,30 @@ export async function resetPreferences() {
 
 export function notificationEventUrl() {
   return `${API_BASE_URL}/api/notifications/events`;
+}
+
+export async function listInformationRequests(caseId?: string, admin = false) {
+  const query = caseId ? `?caseId=${encodeURIComponent(caseId)}` : "";
+  return data(await apiFetch<Envelope<{ items: InformationRequest[] }>>(
+    `${admin ? "/api/admin" : "/api/notifications"}/information-requests${query}`,
+  ));
+}
+
+export async function respondToInformationRequest(informationRequestId: string, responseText: string) {
+  return data(await apiFetch<Envelope<{ informationRequest: InformationRequest }>>(
+    `/api/notifications/information-requests/${informationRequestId}/respond`,
+    { method: "PATCH", body: { responseText } },
+  ));
+}
+
+export async function createInformationRequest(input: {
+  caseId: string;
+  subject: string;
+  message: string;
+  dueAt: string;
+}) {
+  return data(await apiFetch<Envelope<{ informationRequest: InformationRequest }>>(
+    "/api/admin/information-requests",
+    { method: "POST", body: input },
+  ));
 }

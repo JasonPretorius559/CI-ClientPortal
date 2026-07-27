@@ -37,6 +37,7 @@ import {
 } from "./analysisStatus.utils";
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import { CaseCollaboration } from "./CaseCollaboration";
+import { CaseInformationRequests } from "../notifications/CaseInformationRequests";
 import {
   analyzeCase,
   cancelCaseAnalysis,
@@ -779,6 +780,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
               )}
             </div>
           </section>
+          {caseId ? <CaseInformationRequests caseId={caseId} /> : null}
           {caseId ? <CaseCollaboration caseId={caseId} /> : null}
         </main>
 

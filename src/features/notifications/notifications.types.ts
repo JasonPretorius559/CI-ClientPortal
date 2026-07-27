@@ -26,3 +26,14 @@ export type NotificationPreference = {
   quietHoursEnd?: string;
   timezone: string;
 };
+
+export type InformationRequest = {
+  _id: string;
+  caseId: string;
+  subject: string;
+  message: string;
+  dueAt: string;
+  status: "open" | "responded" | "cancelled";
+  responseText?: string;
+  respondedAt?: string;
+};
