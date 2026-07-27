@@ -8,6 +8,7 @@ import { isAdminUser } from "../../features/auth/auth.utils";
 const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "My Cases", to: "/cases" },
+  { label: "Notifications", to: "/notifications" },
   { label: "New Case", to: "/cases/new" },
   { label: "Admin Setup", to: "/admin/setup", adminOnly: true },
   { label: "Profile", to: "/profile" },

@@ -92,6 +92,13 @@ textarea {
     @apply mx-auto min-h-full w-full max-w-[1480px] px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-8;
   }
 
+  .notification-activity-spine {
+    background-image: linear-gradient(to bottom, transparent 0, transparent 16px, rgba(10, 10, 10, 0.055) 16px, rgba(10, 10, 10, 0.055) calc(100% - 16px), transparent calc(100% - 16px));
+    background-position: 30px 0;
+    background-repeat: no-repeat;
+    background-size: 1px 100%;
+  }
+
   .action-cluster {
     @apply flex flex-wrap items-center gap-3;
   }

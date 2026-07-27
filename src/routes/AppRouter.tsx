@@ -24,6 +24,7 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { SetPasswordPage } from "../pages/SetPasswordPage";
 import { SettingsPage } from "../pages/SettingsPage";
+import { NotificationsPage } from "../features/notifications/NotificationsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 
@@ -80,6 +81,7 @@ export function AppRouter() {
           </Route>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
       </Route>
 

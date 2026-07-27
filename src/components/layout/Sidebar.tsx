@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Briefcase, FilePlus2, Home, Settings, Settings2, UserRound } from "lucide-react";
+import { Bell, Briefcase, FilePlus2, Home, Settings, Settings2, UserRound } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { useAuth } from "../../features/auth/useAuth";
 import { isAdminUser } from "../../features/auth/auth.utils";
@@ -7,6 +7,7 @@ import { isAdminUser } from "../../features/auth/auth.utils";
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: Home },
   { label: "My Cases", to: "/cases", icon: Briefcase },
+  { label: "Notifications", to: "/notifications", icon: Bell },
   { label: "New Case", to: "/cases/new", icon: FilePlus2 },
   { label: "Admin Setup", to: "/admin/setup", icon: Settings2, adminOnly: true },
   { label: "Profile", to: "/profile", icon: UserRound },

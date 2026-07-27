@@ -7,6 +7,8 @@ import { UserMenu } from "../components/layout/UserMenu";
 import { Button } from "../components/ui/Button";
 import { GlobalAnalysisProgressBanner } from "../features/cases/GlobalAnalysisProgressBanner";
 import { AnalysisProgressStreamBridge } from "../features/cases/AnalysisProgressStreamBridge";
+import { NotificationBell } from "../features/notifications/NotificationBell";
+import { NotificationStreamBridge } from "../features/notifications/NotificationStreamBridge";
 
 export function PortalLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -35,7 +37,10 @@ export function PortalLayout() {
               </span>
             </div>
 
-            <UserMenu />
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <UserMenu />
+            </div>
           </div>
         </header>
 
@@ -48,6 +53,7 @@ export function PortalLayout() {
 
       <GlobalAnalysisProgressBanner />
       <AnalysisProgressStreamBridge />
+      <NotificationStreamBridge />
     </div>
   );
 }
