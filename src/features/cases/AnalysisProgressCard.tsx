@@ -55,7 +55,7 @@ export function AnalysisProgressCard({
     typeof detail.completedChunks === "number" &&
     typeof detail.totalChunks === "number" &&
     detail.totalChunks > 0
-      ? `${detail.completedChunks} of ${detail.totalChunks} sections complete`
+      ? `${detail.completedChunks} of ${detail.totalChunks} quotation batches complete`
       : null;
   const preliminary = detail.preliminaryKeyFacts;
   const preliminarySummary = preliminary
@@ -118,9 +118,9 @@ export function AnalysisProgressCard({
 
           {preliminarySummary.length ? (
             <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">
-              <p className="font-semibold">Preliminary key facts are ready</p>
+              <p className="font-semibold">Preliminary quote facts are ready</p>
               <p className="mt-1 text-xs text-sky-800">
-                {preliminarySummary.join(" · ")}. The complete structured report is still being validated.
+                {preliminarySummary.join(" · ")}. The complete comparison is still being validated.
               </p>
             </div>
           ) : null}

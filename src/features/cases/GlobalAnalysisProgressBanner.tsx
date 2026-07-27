@@ -95,7 +95,7 @@ export function GlobalAnalysisProgressBanner() {
               </p>
               {primary.preliminaryKeyFacts ? (
                 <p className="mt-2 text-xs font-medium text-sky-700">
-                  Preliminary key facts are ready while the full report is finalised.
+                  Preliminary quote facts are ready while the full comparison is finalised.
                 </p>
               ) : null}
               {primary.analysisError ? (
