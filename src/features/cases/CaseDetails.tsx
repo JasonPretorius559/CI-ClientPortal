@@ -387,6 +387,40 @@ function SelectedAnalysis({
         description="Review the latest extracted gaps, warnings, and supporting information."
       />
 
+      <section className="border border-surface-line bg-surface-subtle p-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Evidence confidence
+            </p>
+            <p className="mt-1 text-lg font-semibold text-ink-950">
+              {score(version.confidenceScore)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Analysis satisfaction
+            </p>
+            <p className="mt-1 text-lg font-semibold text-ink-950">
+              {score(version.satisfactionScore, 5)}
+            </p>
+          </div>
+        </div>
+        {typeof version.satisfactionScoreDetails === "string" &&
+        version.satisfactionScoreDetails.trim() ? (
+          <p className="mt-4 text-sm text-ink-700">
+            {version.satisfactionScoreDetails}
+          </p>
+        ) : null}
+        {asList(version.satisfactionScoreFactors).length ? (
+          <ul className="mt-3 grid gap-1 text-xs text-ink-600 sm:grid-cols-2">
+            {asList(version.satisfactionScoreFactors).map((factor, index) => (
+              <li key={index}>• {String(factor)}</li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
       <div className="grid min-w-0 gap-8 lg:grid-cols-2">
         <section className="space-y-4">
           <SectionDivider title="Missing Information" />

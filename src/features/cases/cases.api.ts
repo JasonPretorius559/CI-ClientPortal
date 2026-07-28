@@ -200,6 +200,8 @@ export type AnalysisVersion = {
   satisfactionScore: number | null;
   satisfactionScoreDetails: unknown;
   satisfactionScoreFactors: unknown;
+  evidenceValidation: unknown;
+  accuracyValidation: unknown;
   tokenUsage: unknown;
   model: string | null;
   schemaKey: string | null;
@@ -235,6 +237,9 @@ function normalizeAnalysisVersion(item: unknown): AnalysisVersion | null {
   if (!isRecord(item)) return null;
 
   const schema = isRecord(item.schema) ? item.schema : null;
+  const satisfaction = isRecord(item.satisfactionScore)
+    ? item.satisfactionScore
+    : null;
   const analysisId = readString(item, ["analysisId", "_id", "id"]);
   const versionNumber = readNumber(item, ["versionNumber", "version", "number"]);
 
@@ -258,9 +263,19 @@ function normalizeAnalysisVersion(item: unknown): AnalysisVersion | null {
     failedAt: readString(item, ["failedAt"]) || null,
     error: item.error ?? item.lastError ?? null,
     confidenceScore: readNumber(item, ["confidenceScore", "confidence", "score"]),
-    satisfactionScore: readNumber(item, ["satisfactionScore"]),
-    satisfactionScoreDetails: item.satisfactionScoreDetails ?? null,
-    satisfactionScoreFactors: item.satisfactionScoreFactors ?? null,
+    satisfactionScore:
+      readNumber(item, ["satisfactionScore"]) ??
+      (satisfaction ? readNumber(satisfaction, ["score"]) : null),
+    satisfactionScoreDetails:
+      item.satisfactionScoreDetails ??
+      (satisfaction ? satisfaction.details : null) ??
+      null,
+    satisfactionScoreFactors:
+      item.satisfactionScoreFactors ??
+      (satisfaction ? satisfaction.factors : null) ??
+      null,
+    evidenceValidation: item.evidenceValidation ?? null,
+    accuracyValidation: item.accuracyValidation ?? null,
     tokenUsage: item.tokenUsage ?? null,
     model: readString(item, ["openAiModel", "model", "modelName", "llmModel"]) || null,
     schemaKey: readString(item, ["structuredOutputSchemaKey", "schemaKey", "schemaName"]) || (schema ? readString(schema, ["key", "name"]) : null) || null,
