@@ -796,7 +796,13 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   }, [analysisDetail, analysisStatus, pollingEnabled, showToast]);
 
   const analyzeMutation = useMutation({
-    mutationFn: () => analyzeCase({ caseId, inputHash, model }),
+    mutationFn: () =>
+      analyzeCase({
+        caseId,
+        inputHash,
+        model,
+        force: Boolean(current && isCompleted(current)),
+      }),
     onSuccess: async (result) => {
       const data = dataRecord(result.payload);
       const duplicate = data.duplicateAnalysis === true;

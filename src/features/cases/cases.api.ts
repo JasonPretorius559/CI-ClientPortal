@@ -359,14 +359,17 @@ export async function analyzeCase({
   caseId,
   inputHash,
   model,
+  force,
 }: {
   caseId: string;
   inputHash?: string;
   model?: string;
+  force?: boolean;
 }): Promise<AnalyzeCaseResult> {
   const body: Record<string, unknown> = {};
   if (inputHash?.trim()) body.inputHash = inputHash.trim();
   if (model?.trim()) body.openAiModel = model.trim();
+  if (force) body.force = true;
 
   const response = await fetch(
     `${API_BASE_URL}/api/auth/user-cases/${encodeURIComponent(caseId)}/analyze`,
