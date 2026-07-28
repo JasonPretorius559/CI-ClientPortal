@@ -371,6 +371,52 @@ function SelectedAnalysis({
     version.documentWarnings ??
       firstAnalysisValue(version.analysis, ["documentWarnings", "warnings"]),
   );
+  const analysis = isRecord(version.analysis) ? version.analysis : {};
+  const summary = isRecord(analysis.summary_of_comparison)
+    ? analysis.summary_of_comparison
+    : null;
+  const overview =
+    summary && typeof summary.one_paragraph_overview === "string"
+      ? summary.one_paragraph_overview
+      : "";
+  const headlineFindings = summary
+    ? asList(summary.headline_findings)
+    : [];
+  const tables = isRecord(analysis.tables) ? analysis.tables : null;
+  const premiumComparison =
+    tables && isRecord(tables.premium_comparison)
+      ? tables.premium_comparison
+      : null;
+  const premiumColumns = premiumComparison
+    ? asList(premiumComparison.columns).map(String)
+    : [];
+  const premiumRows = premiumComparison
+    ? asList(premiumComparison.rows).filter(Array.isArray)
+    : [];
+  const recommendations = isRecord(analysis.recommendations)
+    ? analysis.recommendations
+    : null;
+  const primaryRecommendation =
+    recommendations && isRecord(recommendations.primary_recommendation)
+      ? recommendations.primary_recommendation
+      : null;
+  const recommendedInsurer = primaryRecommendation
+    ? toDisplayValue(
+        primaryRecommendation.insurer_name ??
+          primaryRecommendation.recommended_option_name,
+      )
+    : "";
+  const recommendationSummary =
+    primaryRecommendation &&
+    typeof primaryRecommendation.fit_for_client_summary === "string"
+      ? primaryRecommendation.fit_for_client_summary
+      : "";
+  const recommendationReasons = primaryRecommendation
+    ? asList(primaryRecommendation.reasons)
+    : [];
+  const recommendationWatchOuts = primaryRecommendation
+    ? asList(primaryRecommendation.watch_outs)
+    : [];
   const viewingOld = current && current.analysisId !== version.analysisId;
 
   return (
@@ -384,8 +430,103 @@ function SelectedAnalysis({
 
       <SectionDivider
         title={`Analysis Output: Version ${version.versionNumber}`}
-        description="Review the latest extracted gaps, warnings, and supporting information."
+        description="Review the comparison, recommendation, evidence quality, gaps, and warnings."
       />
+
+      {overview || headlineFindings.length ? (
+        <section className="space-y-4 border border-surface-line bg-white p-5">
+          <SectionDivider title="Comparison Summary" />
+          {overview ? (
+            <p className="text-sm leading-6 text-ink-800">{overview}</p>
+          ) : null}
+          {headlineFindings.length ? (
+            <ul className="grid gap-2 text-sm text-ink-700">
+              {headlineFindings.map((finding, index) => (
+                <li key={index} className="border-l-2 border-ink-300 pl-3">
+                  {String(finding)}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
+      {premiumColumns.length && premiumRows.length ? (
+        <section className="space-y-4">
+          <SectionDivider title="Premium Comparison" />
+          <div className="overflow-x-auto border border-surface-line bg-white">
+            <table className="min-w-full divide-y divide-surface-line text-left text-sm">
+              <thead className="bg-surface-subtle">
+                <tr>
+                  {premiumColumns.map((column, index) => (
+                    <th
+                      key={index}
+                      scope="col"
+                      className="whitespace-nowrap px-4 py-3 font-semibold text-ink-800"
+                    >
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-line">
+                {premiumRows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {(row as unknown[]).map((cell, cellIndex) => (
+                      <td
+                        key={cellIndex}
+                        className="whitespace-nowrap px-4 py-3 text-ink-700"
+                      >
+                        {toDisplayValue(cell) || "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {primaryRecommendation ? (
+        <section className="space-y-4 border border-ink-950 bg-ink-950 p-5 text-white">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
+              Primary recommendation
+            </p>
+            <h3 className="mt-2 text-xl font-semibold">
+              {recommendedInsurer || "Recommended option"}
+            </h3>
+          </div>
+          {recommendationSummary ? (
+            <p className="text-sm leading-6 text-white/85">
+              {recommendationSummary}
+            </p>
+          ) : null}
+          <div className="grid gap-5 md:grid-cols-2">
+            {recommendationReasons.length ? (
+              <div>
+                <p className="text-sm font-semibold">Why it fits</p>
+                <ul className="mt-2 space-y-2 text-sm text-white/80">
+                  {recommendationReasons.map((reason, index) => (
+                    <li key={index}>• {String(reason)}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {recommendationWatchOuts.length ? (
+              <div>
+                <p className="text-sm font-semibold">Watch-outs</p>
+                <ul className="mt-2 space-y-2 text-sm text-white/80">
+                  {recommendationWatchOuts.map((watchOut, index) => (
+                    <li key={index}>• {String(watchOut)}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <section className="border border-surface-line bg-surface-subtle p-4">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -547,7 +688,15 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     ]) || caseId;
   const caseType =
     readDisplay(caseItem, ["caseType", "type", "caseTypeName"]) ||
-    "Personal Policy Analysis";
+    "Case Analysis";
+  const linkedCaseType = readDisplay(caseItem, [
+    "linkedCaseType",
+    "linkedType",
+    "linkedCaseTypeName",
+  ]);
+  const caseTypeLabel = [caseType, linkedCaseType]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(" · ");
   const submittedDate = readDisplay(caseItem, [
     "submittedDate",
     "createdAt",
@@ -728,7 +877,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
             {getCaseTitle(caseItem)}
           </h2>
           <p className="mt-2 break-words text-sm text-ink-600">
-            {caseType}
+            {caseTypeLabel}
           </p>
         </div>
         <InlineMeta
