@@ -4,14 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
-import { InlineMeta } from "../components/ui/InlineMeta";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { PageHeader } from "../components/ui/PageHeader";
 import { PageShell } from "../components/ui/PageShell";
 import { CaseDetails } from "../features/cases/CaseDetails";
 import { getUserCases } from "../features/cases/cases.api";
-import { getCaseStatus, getCaseTitle, matchesCaseId } from "../features/cases/cases.utils";
-import { CaseStatusBadge } from "../features/cases/CaseStatusBadge";
+import { getCaseTitle, matchesCaseId } from "../features/cases/cases.utils";
 import { ApiError } from "../lib/api";
 
 export function CaseDetailPage() {
@@ -64,12 +62,6 @@ export function CaseDetailPage() {
             </Link>
           </Button>
         }
-      />
-      <InlineMeta
-        items={[
-          { label: "Case status", value: <CaseStatusBadge status={getCaseStatus(caseItem)} /> },
-          { label: "Case identifier", value: decodedId || "Not assigned" },
-        ]}
       />
       <CaseDetails caseItem={caseItem} />
     </PageShell>

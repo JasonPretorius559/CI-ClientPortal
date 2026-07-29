@@ -190,22 +190,25 @@ export function EvidenceExplorer({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {categories.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  onClick={() => setCategory(item)}
-                  className={[
-                    "shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                    category === item
-                      ? "border-ink-950 bg-ink-950 text-white"
-                      : "border-ink-200 bg-white text-ink-600 hover:border-ink-500 hover:text-ink-950",
-                  ].join(" ")}
-                >
-                  {item}
-                </button>
-              ))}
+            <div>
+              <label
+                htmlFor="evidence-category"
+                className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500"
+              >
+                Finding category
+              </label>
+              <select
+                id="evidence-category"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                className="min-h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none transition focus:border-ink-950"
+              >
+                {categories.map((item) => (
+                  <option key={item} value={item}>
+                    {item === "All" ? `All categories (${evidence.claimCount})` : item}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -273,7 +276,7 @@ export function EvidenceExplorer({
           </div>
         </div>
 
-        <div className="min-w-0 bg-[linear-gradient(135deg,#f8f4ff_0%,#ffffff_55%)] p-5 sm:p-6">
+        <div className="min-w-0 bg-[linear-gradient(135deg,#f3f4f6_0%,#ffffff_55%)] p-5 sm:p-6">
           {selectedClaim ? (
             <article className="space-y-6">
               <div className="flex flex-wrap items-center gap-2">
