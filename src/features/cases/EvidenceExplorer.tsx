@@ -117,7 +117,7 @@ export function EvidenceExplorer({
 
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-brand-200 bg-white shadow-panel">
-      <header className="border-b border-brand-900 bg-[#120c19] px-5 py-5 text-white sm:px-6">
+      <header className="border-b border-ink-800 bg-ink-950 px-5 py-5 text-white sm:px-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-brand-300">

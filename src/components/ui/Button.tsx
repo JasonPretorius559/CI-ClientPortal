@@ -13,7 +13,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "border-brand-700 bg-brand-700 text-white shadow-[0_8px_20px_rgba(109,25,215,0.16)] hover:border-brand-800 hover:bg-brand-800 active:bg-brand-900 disabled:border-surface-line disabled:bg-ink-200 disabled:text-ink-500 disabled:shadow-none",
+    "border-brand-700 bg-brand-700 text-white shadow-[0_8px_20px_rgba(0,0,0,0.12)] hover:border-brand-800 hover:bg-brand-800 active:bg-brand-900 disabled:border-surface-line disabled:bg-ink-200 disabled:text-ink-500 disabled:shadow-none",
   secondary:
     "border-surface-line bg-white text-ink-900 hover:border-ink-300 hover:bg-surface-muted active:bg-ink-100 disabled:border-surface-line disabled:bg-surface-muted disabled:text-ink-500",
   ghost:
