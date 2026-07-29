@@ -70,8 +70,8 @@ export function CasesPage() {
       />
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.85fr)]">
-        <div className="surface-card px-5 py-6 sm:px-7">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">Case Directory</p>
+        <div className="surface-card border-brand-100 bg-brand-50/55 px-5 py-6 sm:px-7">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-700">Case directory</p>
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(220px,0.9fr)]">
             <div>
               <h2 className="max-w-2xl text-[1.8rem] font-semibold leading-tight tracking-[-0.05em] text-ink-950 sm:text-[2.3rem]">
@@ -81,7 +81,7 @@ export function CasesPage() {
                 The list is structured around quick triage first, with active filters and search controls grouped into one persistent control deck.
               </p>
             </div>
-            <div className="rounded-[1.5rem] border border-surface-line bg-surface-muted p-5">
+            <div className="rounded-[1.2rem] border border-brand-100 bg-white/75 p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Visible results</p>
               <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-ink-950">{filteredCases.length}</p>
               <p className="mt-2 text-sm text-ink-600">

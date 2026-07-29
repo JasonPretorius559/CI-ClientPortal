@@ -22,11 +22,9 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.52) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.52) 1px, transparent 1px),
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.8), transparent 36%),
-    linear-gradient(180deg, #f5f5f5 0%, #ececec 100%);
-  background-size: 32px 32px, 32px 32px, auto, auto;
+    radial-gradient(circle at 88% -8%, rgba(132, 52, 245, 0.09), transparent 30rem),
+    radial-gradient(circle at 18% 105%, rgba(109, 25, 215, 0.055), transparent 34rem),
+    #f6f5f8;
   color: #111111;
 }
 
@@ -48,7 +46,7 @@ textarea {
 }
 
 ::selection {
-  background: #18181b;
+  background: #6d19d7;
   color: #ffffff;
 }
 
@@ -61,19 +59,19 @@ textarea {
 
 @layer components {
   .page-shell {
-    @apply space-y-12;
+    @apply space-y-8 lg:space-y-10;
   }
 
   .surface-card {
-    @apply relative overflow-hidden rounded-[1.75rem] border border-surface-line bg-white;
+    @apply relative overflow-hidden rounded-[1.35rem] border border-surface-line bg-white;
     box-shadow:
-      0 18px 40px rgba(17, 17, 17, 0.055),
+      0 18px 44px rgba(36, 6, 66, 0.045),
       inset 0 1px 0 rgba(255, 255, 255, 0.75);
   }
 
   .surface-card-muted {
-    @apply relative overflow-hidden rounded-[1.75rem] border border-surface-line bg-surface-muted;
-    box-shadow: 0 12px 28px rgba(17, 17, 17, 0.03);
+    @apply relative overflow-hidden rounded-[1.35rem] border border-surface-line bg-surface-muted;
+    box-shadow: 0 12px 28px rgba(36, 6, 66, 0.03);
   }
 
   .page-section {
@@ -89,7 +87,7 @@ textarea {
   }
 
   .workspace-canvas {
-    @apply mx-auto min-h-full w-full max-w-[1480px] px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-8;
+    @apply mx-auto min-h-full w-full max-w-[1480px] px-4 py-5 sm:px-6 sm:py-7 lg:px-9 lg:py-8;
   }
 
   .notification-activity-spine {
@@ -136,11 +134,11 @@ textarea {
   }
 
   .filter-pill {
-    @apply inline-flex min-h-11 items-center gap-2 rounded-full border border-surface-line bg-surface-muted px-4 py-2.5 text-sm font-semibold text-ink-600 transition-colors hover:border-ink-950 hover:bg-white hover:text-ink-950;
+    @apply inline-flex min-h-10 items-center gap-2 rounded-full border border-surface-line bg-surface-muted px-4 py-2 text-sm font-semibold text-ink-600 transition-colors hover:border-brand-300 hover:bg-white hover:text-brand-800;
   }
 
   .filter-pill-active {
-    @apply border-ink-950 bg-ink-950 text-white;
+    @apply border-brand-700 bg-brand-700 text-white;
   }
 
   .page-tabs {
@@ -152,11 +150,11 @@ textarea {
   }
 
   .page-tab-active {
-    @apply border-ink-950 bg-ink-950 text-white;
+    @apply border-brand-700 bg-brand-700 text-white;
   }
 
   .inline-meta {
-    @apply grid gap-px overflow-hidden rounded-[1.5rem] border border-surface-line bg-surface-line sm:grid-cols-2 xl:grid-cols-4;
+    @apply grid gap-px overflow-hidden rounded-[1.2rem] border border-surface-line bg-surface-line sm:grid-cols-2 xl:grid-cols-4;
   }
 
   .inline-meta-item {
@@ -188,19 +186,19 @@ textarea {
   }
 
   .data-grid-head-cell {
-    @apply px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500;
+    @apply bg-surface-muted px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.17em] text-ink-500;
   }
 
   .data-grid-cell {
-    @apply px-4 py-4 align-middle text-ink-700;
+    @apply px-4 py-3.5 align-middle text-ink-700;
   }
 
   .data-grid-table tbody tr {
-    @apply border-b border-surface-line transition-colors duration-150 hover:bg-surface-muted/70;
+    @apply border-b border-surface-line transition-colors duration-150 hover:bg-brand-50/60;
   }
 
   .data-table-shell {
-    @apply overflow-hidden rounded-[1.75rem] border border-surface-line bg-white;
+    @apply overflow-hidden rounded-[1.35rem] border border-surface-line bg-white;
   }
 
   .table-meta-bar {

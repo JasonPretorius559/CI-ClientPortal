@@ -1,11 +1,12 @@
 import { SlidersHorizontal, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
+import { PageShell } from "../components/ui/PageShell";
 import { NotificationPreferencesForm } from "../features/notifications/NotificationPreferencesForm";
 
 export function SettingsPage() {
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader title="Settings" description="Account and security preferences." />
       <NotificationPreferencesForm />
       <div className="grid gap-4 lg:grid-cols-2">
@@ -36,6 +37,6 @@ export function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   );
 }

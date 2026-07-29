@@ -116,11 +116,11 @@ export function EvidenceExplorer({
       : Math.round(Math.max(0, Math.min(1, evidence.coverage)) * 100);
 
   return (
-    <section className="overflow-hidden rounded-[1.75rem] border border-ink-300 bg-white shadow-soft">
-      <header className="border-b border-ink-200 bg-ink-950 px-5 py-5 text-white sm:px-6">
+    <section className="overflow-hidden rounded-[1.35rem] border border-brand-200 bg-white shadow-panel">
+      <header className="border-b border-brand-900 bg-[#120c19] px-5 py-5 text-white sm:px-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-white/65">
+            <div className="flex items-center gap-2 text-brand-300">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
                 Grounded analysis
@@ -156,7 +156,7 @@ export function EvidenceExplorer({
         {coverage !== null ? (
           <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/15">
             <div
-              className="h-full rounded-full bg-white transition-[width] duration-300"
+              className="h-full rounded-full bg-brand-400 transition-[width] duration-300"
               style={{ width: `${coverage}%` }}
             />
           </div>
@@ -222,8 +222,8 @@ export function EvidenceExplorer({
                     className={[
                       "group flex w-full min-w-0 gap-3 border-b border-ink-200 px-4 py-4 text-left transition sm:px-5",
                       selected
-                        ? "bg-ink-950 text-white"
-                        : "bg-white hover:bg-surface-muted",
+                        ? "bg-brand-700 text-white"
+                        : "bg-white hover:bg-brand-50",
                     ].join(" ")}
                   >
                     <span
@@ -273,7 +273,7 @@ export function EvidenceExplorer({
           </div>
         </div>
 
-        <div className="min-w-0 bg-[linear-gradient(135deg,#fafafa_0%,#ffffff_55%)] p-5 sm:p-6">
+        <div className="min-w-0 bg-[linear-gradient(135deg,#f8f4ff_0%,#ffffff_55%)] p-5 sm:p-6">
           {selectedClaim ? (
             <article className="space-y-6">
               <div className="flex flex-wrap items-center gap-2">
@@ -303,7 +303,7 @@ export function EvidenceExplorer({
                   Supporting passage
                 </p>
                 {selectedClaim.quote ? (
-                  <blockquote className="mt-4 border-l-2 border-ink-950 pl-4 text-sm leading-7 text-ink-800">
+                  <blockquote className="mt-4 border-l-2 border-brand-600 pl-4 text-sm leading-7 text-ink-800">
                     “{selectedClaim.quote}”
                   </blockquote>
                 ) : (

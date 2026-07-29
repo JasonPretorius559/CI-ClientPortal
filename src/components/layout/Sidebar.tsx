@@ -21,17 +21,19 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdminUser(user));
 
   return (
-    <aside className="hidden fixed inset-y-0 left-0 z-20 w-72 shrink-0 overflow-y-auto border-r border-surface-line bg-[#f3f3f3] px-5 py-6 lg:flex lg:flex-col">
+    <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 shrink-0 overflow-y-auto border-r border-white/10 bg-[#120c19] px-5 py-6 text-white lg:flex lg:flex-col">
       <div className="flex items-center gap-3 px-2">
-        <img src={cloudLogo} alt="" className="h-11 w-11 object-contain" aria-hidden="true" />
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-600 shadow-[0_10px_30px_rgba(109,25,215,0.28)]">
+          <img src={cloudLogo} alt="" className="h-8 w-8 object-contain brightness-0 invert" aria-hidden="true" />
+        </span>
         <div className="min-w-0">
-          <p className="text-base font-bold tracking-[-0.03em] text-ink-950">Cloud Insure</p>
-          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Operations portal</p>
+          <p className="text-base font-bold tracking-[-0.03em] text-white">Cloud Insure</p>
+          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Valentry analysis</p>
         </div>
       </div>
 
       <div className="mt-8 flex-1">
-        <p className="px-3 text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Workspace</p>
+        <p className="px-3 text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">Workspace</p>
         <nav className="mt-3 space-y-1" aria-label="Main navigation">
           {visibleItems.map((item) => {
             const Icon = item.icon;
@@ -41,8 +43,8 @@ export function Sidebar() {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 border-l-2 border-transparent px-3 py-3 text-sm font-medium text-ink-600 transition-colors duration-150 hover:border-ink-300 hover:bg-white/70 hover:text-ink-950",
-                    isActive && "border-ink-950 bg-white text-ink-950",
+                    "flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm font-medium text-white/60 no-underline transition-colors duration-150 hover:border-white/10 hover:bg-white/[0.06] hover:text-white",
+                    isActive && "border-brand-500/30 bg-brand-600/20 text-white",
                   )
                 }
               >
