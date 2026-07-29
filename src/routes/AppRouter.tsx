@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { wrapReactRouterRouting } from "@sentry/react";
 import { FullPageLoader } from "../components/ui/LoadingSkeleton";
 import { AdminLayout } from "../features/admin/AdminLayout";
 import { AdminMasterfileFormPage } from "../features/admin/pages/AdminMasterfileFormPage";
@@ -28,6 +29,8 @@ import { NotificationsPage } from "../features/notifications/NotificationsPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicOnlyRoute } from "./PublicOnlyRoute";
 
+const SentryRoutes = wrapReactRouterRouting(Routes);
+
 function RootRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <FullPageLoader />;
@@ -36,7 +39,7 @@ function RootRedirect() {
 
 export function AppRouter() {
   return (
-    <Routes>
+    <SentryRoutes>
       <Route path="/" element={<RootRedirect />} />
 
       <Route element={<PublicOnlyRoute />}>
@@ -86,6 +89,6 @@ export function AppRouter() {
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    </SentryRoutes>
   );
 }
