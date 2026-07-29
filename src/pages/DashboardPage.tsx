@@ -44,8 +44,8 @@ export function DashboardPage() {
         }
       />
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
-        <div className="surface-card border-[#25172f] bg-[#120c19] px-5 py-6 text-white sm:px-7">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-300">Operations snapshot</p>
+        <div className="surface-card border-ink-800 bg-ink-950 px-5 py-6 text-white sm:px-7">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">Operations snapshot</p>
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.9fr)]">
             <div>
               <h2 className="max-w-xl text-[1.8rem] font-semibold leading-tight tracking-[-0.05em] text-white sm:text-[2.4rem]">
@@ -67,7 +67,7 @@ export function DashboardPage() {
                     <p className="text-sm font-semibold text-white">Priority queue</p>
                     <p className="mt-1 text-sm text-white/50">{attentionCases} cases need attention.</p>
                   </div>
-                  <ArrowUpRight className="h-4 w-4 text-brand-300" aria-hidden="true" />
+                  <ArrowUpRight className="h-4 w-4 text-white/55" aria-hidden="true" />
                 </div>
               </div>
             </div>

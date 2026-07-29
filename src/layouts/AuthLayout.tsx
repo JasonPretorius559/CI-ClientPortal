@@ -10,21 +10,21 @@ type AuthLayoutProps = {
 export function AuthLayout({ title, description, children }: AuthLayoutProps) {
   return (
     <main className="grid min-h-screen bg-surface-canvas lg:grid-cols-[minmax(380px,0.92fr)_minmax(520px,1.08fr)]">
-      <section className="relative hidden overflow-hidden bg-[#120c19] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
-        <div className="absolute -right-40 -top-48 h-[34rem] w-[34rem] rounded-full bg-brand-600/30 blur-3xl" />
-        <div className="absolute -bottom-56 -left-40 h-[30rem] w-[30rem] rounded-full border-[80px] border-brand-700/20" />
+      <section className="relative hidden overflow-hidden bg-ink-950 p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
+        <div className="absolute -right-40 -top-48 h-[34rem] w-[34rem] rounded-full bg-white/[0.06] blur-3xl" />
+        <div className="absolute -bottom-56 -left-40 h-[30rem] w-[30rem] rounded-full border-[80px] border-white/[0.04]" />
         <div className="relative flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-600">
+          <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/10">
             <span className="text-sm font-extrabold tracking-[-0.04em]">CI</span>
           </span>
           <div>
             <p className="font-bold tracking-[-0.02em]">Cloud Insure</p>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Valentry analysis</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Operations portal</p>
           </div>
         </div>
 
         <div className="relative max-w-xl">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-300">Decision intelligence</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">Decision intelligence</p>
           <h2 className="mt-5 text-5xl font-semibold leading-[0.98] tracking-[-0.06em] xl:text-6xl">
             Every conclusion, connected to its evidence.
           </h2>
