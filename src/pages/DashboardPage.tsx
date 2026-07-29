@@ -44,30 +44,30 @@ export function DashboardPage() {
         }
       />
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
-        <div className="surface-card px-5 py-6 sm:px-7">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">Operations Snapshot</p>
+        <div className="surface-card border-[#25172f] bg-[#120c19] px-5 py-6 text-white sm:px-7">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-300">Operations snapshot</p>
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.9fr)]">
             <div>
-              <h2 className="max-w-xl text-[1.8rem] font-semibold leading-tight tracking-[-0.05em] text-ink-950 sm:text-[2.4rem]">
+              <h2 className="max-w-xl text-[1.8rem] font-semibold leading-tight tracking-[-0.05em] text-white sm:text-[2.4rem]">
                 Keep active claims moving with fewer handoffs and a clearer review queue.
               </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-ink-600">
-                The dashboard now acts like a case control room: current workload on the left, portfolio signals and next actions on the right.
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/55">
+                Current workload, portfolio signals, and the next review queue—kept in one decision-ready view.
               </p>
             </div>
-            <div className="rounded-[1.5rem] border border-surface-line bg-surface-muted p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Today&apos;s focus</p>
+            <div className="rounded-[1.2rem] border border-white/10 bg-white/[0.06] p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Today&apos;s focus</p>
               <div className="mt-4 space-y-4">
-                <div className="border-b border-surface-line pb-3">
-                  <p className="text-3xl font-semibold tracking-[-0.05em] text-ink-950">{openCases}</p>
-                  <p className="mt-1 text-sm text-ink-600">Active cases in progress</p>
+                <div className="border-b border-white/10 pb-3">
+                  <p className="text-3xl font-semibold tracking-[-0.05em] text-white">{openCases}</p>
+                  <p className="mt-1 text-sm text-white/50">Active cases in progress</p>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-ink-950">Priority queue</p>
-                    <p className="mt-1 text-sm text-ink-600">{attentionCases} cases need attention.</p>
+                    <p className="text-sm font-semibold text-white">Priority queue</p>
+                    <p className="mt-1 text-sm text-white/50">{attentionCases} cases need attention.</p>
                   </div>
-                  <ArrowUpRight className="h-4 w-4 text-ink-500" aria-hidden="true" />
+                  <ArrowUpRight className="h-4 w-4 text-brand-300" aria-hidden="true" />
                 </div>
               </div>
             </div>

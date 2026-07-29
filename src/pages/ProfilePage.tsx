@@ -1,5 +1,6 @@
 import { Card, CardContent } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
+import { PageShell } from "../components/ui/PageShell";
 import { useAuth } from "../features/auth/useAuth";
 
 function readUserField(user: unknown, key: string) {
@@ -20,7 +21,7 @@ export function ProfilePage() {
   ].filter(([, value]) => value);
 
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader title="Profile" description="Your current account information." />
       <Card>
         <CardContent>
@@ -38,6 +39,6 @@ export function ProfilePage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }

@@ -13,7 +13,7 @@ export function DashboardMetricCard({
   detail?: string;
 }) {
   return (
-    <Card className="p-5 sm:p-6">
+    <Card className="group p-5 transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-panel sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">{label}</p>
@@ -25,7 +25,7 @@ export function DashboardMetricCard({
           ) : null}
         </div>
         {icon ? (
-          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-surface-line bg-surface-muted text-ink-700">
+          <div className="grid h-11 w-11 place-items-center rounded-xl border border-brand-100 bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-100">
             {icon}
           </div>
         ) : null}
