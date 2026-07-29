@@ -4,7 +4,6 @@ import { MessageSquare, Send } from "lucide-react";
 import { Alert } from "../../components/ui/Alert";
 import { Button } from "../../components/ui/Button";
 import { LoadingSkeleton } from "../../components/ui/LoadingSkeleton";
-import { SectionDivider } from "../../components/ui/PageShell";
 import { formatDate } from "../../lib/dates";
 import { ApiError } from "../../lib/api";
 import { createCaseComment, getCaseComments } from "./cases.api";
@@ -28,7 +27,6 @@ export function CaseCollaboration({ caseId }: { caseId: string }) {
 
   return (
     <section className="space-y-4">
-      <SectionDivider title="Case Conversation" description="Share follow-up information and keep decisions attached to this case." />
       <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); if (body.trim()) createMutation.mutate(); }}>
         <label className="sr-only" htmlFor="case-comment">Add a case comment</label>
         <textarea id="case-comment" value={body} onChange={(event) => setBody(event.target.value)} maxLength={4000} placeholder="Add a comment or follow-up detail…" className="min-h-24 w-full border border-ink-300 bg-white px-3 py-2 text-sm focus:border-ink-950 focus:outline-none focus:ring-2 focus:ring-ink-200" />

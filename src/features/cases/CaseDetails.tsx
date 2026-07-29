@@ -4,8 +4,12 @@ import {
   AlertTriangle,
   Bot,
   CheckCircle2,
+  ChevronDown,
   Download,
+  FileText,
   FileWarning,
+  History,
+  MessageSquare,
   Play,
   RefreshCw,
   Sparkles,
@@ -14,7 +18,6 @@ import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { CommandBarGroup } from "../../components/ui/CommandBar";
-import { InlineMeta } from "../../components/ui/InlineMeta";
 import { SectionDivider } from "../../components/ui/PageShell";
 import { formatDate } from "../../lib/dates";
 import { ApiError } from "../../lib/api";
@@ -46,9 +49,54 @@ import {
   getCaseAnalysisVersions,
   type AnalysisVersion,
 } from "./cases.api";
-import { getCaseStatus, getCaseTitle, readCaseField } from "./cases.utils";
+import { getCaseStatus, readCaseField } from "./cases.utils";
 
 const reportReadyAnalysisStatuses = new Set(["completed", "completed_with_warnings"]);
+
+function DisclosureSection({
+  title,
+  description,
+  icon,
+  meta,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  description?: string;
+  icon?: React.ReactNode;
+  meta?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen || undefined}
+      className="group overflow-hidden rounded-2xl border border-surface-line bg-white"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 marker:content-none hover:bg-surface-subtle sm:px-5">
+        {icon ? (
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink-950 text-white">
+            {icon}
+          </span>
+        ) : null}
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-ink-950">{title}</span>
+          {description ? (
+            <span className="mt-0.5 block text-xs leading-5 text-ink-500">
+              {description}
+            </span>
+          ) : null}
+        </span>
+        {meta ? <span className="shrink-0 text-xs font-medium text-ink-500">{meta}</span> : null}
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-ink-500 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="border-t border-surface-line p-4 sm:p-5">{children}</div>
+    </details>
+  );
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -291,10 +339,6 @@ function AnalysisVersionList({
 }) {
   return (
     <section className="space-y-4">
-      <SectionDivider
-        title="Analysis Versions"
-        description="Switch between historical outputs and the current working version."
-      />
       {versions.length ? (
           <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
             {versions.map((version) => {
@@ -867,36 +911,40 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   return (
     <div className="space-y-7">
-      <section className="space-y-4 border-b border-ink-200 pb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <CaseStatusBadge status={getCaseStatus(caseItem)} />
-          <Badge
-            tone={
-              isCompleted(current ?? ({} as AnalysisVersion))
-                ? "outline"
-                : "muted"
-            }
-          >
-            {formatStatus(analysisStatus)}
-          </Badge>
+      <section className="rounded-2xl border border-surface-line bg-white px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <CaseStatusBadge status={getCaseStatus(caseItem)} />
+            <Badge
+              tone={
+                isCompleted(current ?? ({} as AnalysisVersion))
+                  ? "outline"
+                  : "muted"
+              }
+            >
+              Analysis: {formatStatus(analysisStatus)}
+            </Badge>
+            <span className="text-sm text-ink-600">{caseTypeLabel}</span>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4 lg:flex lg:items-center">
+            <div>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500">Reference</dt>
+              <dd className="mt-1 font-medium text-ink-950">#{caseReferenceNumber || "Not assigned"}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500">Created</dt>
+              <dd className="mt-1 whitespace-nowrap font-medium text-ink-950">{formatDate(submittedDate)}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500">Updated</dt>
+              <dd className="mt-1 whitespace-nowrap font-medium text-ink-950">{formatDate(lastUpdatedDate)}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500">Files</dt>
+              <dd className="mt-1 font-medium text-ink-950">{filesAttachedCount}</dd>
+            </div>
+          </dl>
         </div>
-        <div>
-          <p className="page-toolbar-meta">Case workbench</p>
-          <h2 className="mt-2 break-words text-[2rem] font-semibold tracking-[-0.03em] text-ink-950">
-            {getCaseTitle(caseItem)}
-          </h2>
-          <p className="mt-2 break-words text-sm text-ink-600">
-            {caseTypeLabel}
-          </p>
-        </div>
-        <InlineMeta
-          items={[
-            { label: "Reference", value: `#${caseReferenceNumber || "Not assigned"}` },
-            { label: "Created", value: formatDate(submittedDate) },
-            { label: "Last updated", value: formatDate(lastUpdatedDate) },
-            { label: "Files attached", value: filesAttachedCount },
-          ]}
-        />
       </section>
 
       <AnalysisBanner
@@ -910,20 +958,31 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
             : "Unable to run analysis."}
         </Alert>
       ) : null}
-      <AnalysisProgressCard detail={analysisDetail} active={running} />
+      {running ? (
+        <AnalysisProgressCard detail={analysisDetail} active />
+      ) : (
+        <DisclosureSection
+          title="Processing details"
+          description="Document preparation and completed analysis stages."
+          meta={`${analysisDetail.progress ?? 100}%`}
+        >
+          <AnalysisProgressCard detail={analysisDetail} active={false} />
+        </DisclosureSection>
+      )}
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <main className="min-w-0 space-y-6">
           <SelectedAnalysis
             version={selectedVersion ?? null}
             current={current}
           />
 
-          <section className="space-y-4">
-            <SectionDivider
-              title="Supporting Documents"
-              description="Documents and attachments submitted with this case."
-            />
+          <DisclosureSection
+            title="Supporting documents"
+            description="Documents and attachments submitted with this case."
+            icon={<FileText className="h-4 w-4" aria-hidden="true" />}
+            meta={`${filesAttachedCount} file${filesAttachedCount === 1 ? "" : "s"}`}
+          >
             <div>
               {files.length ? (
                 <div className="space-y-0 border-y border-ink-200">
@@ -971,16 +1030,32 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
                 </p>
               )}
             </div>
-          </section>
-          {caseId ? <CaseInformationRequests caseId={caseId} /> : null}
-          {caseId ? <CaseCollaboration caseId={caseId} /> : null}
+          </DisclosureSection>
+          {caseId ? (
+            <DisclosureSection
+              title="Information requests"
+              description="Follow-ups and missing inputs for this case."
+              icon={<MessageSquare className="h-4 w-4" aria-hidden="true" />}
+            >
+              <CaseInformationRequests caseId={caseId} />
+            </DisclosureSection>
+          ) : null}
+          {caseId ? (
+            <DisclosureSection
+              title="Collaboration"
+              description="Case comments and team discussion."
+              icon={<MessageSquare className="h-4 w-4" aria-hidden="true" />}
+            >
+              <CaseCollaboration caseId={caseId} />
+            </DisclosureSection>
+          ) : null}
         </main>
 
         <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
-          <section className="space-y-4 border-b border-ink-200 pb-5">
+          <section className="space-y-4 rounded-2xl border border-surface-line bg-white p-5 shadow-soft">
             <SectionDivider
-              title="Analysis Actions"
-              description="Run, cancel, refresh, or export analysis for this case."
+              title="Case controls"
+              description="Run, refresh, or export this analysis."
             />
             <CommandBarGroup className="xl:flex-col">
               <Button
@@ -1032,11 +1107,18 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
             </CommandBarGroup>
           </section>
 
-          <AnalysisVersionList
-            versions={versions}
-            selectedVersion={selectedVersion ?? null}
-            setSelectedVersionId={setSelectedVersionId}
-          />
+          <DisclosureSection
+            title="Analysis history"
+            description="Switch between historical outputs."
+            icon={<History className="h-4 w-4" aria-hidden="true" />}
+            meta={`${versions.length} version${versions.length === 1 ? "" : "s"}`}
+          >
+            <AnalysisVersionList
+              versions={versions}
+              selectedVersion={selectedVersion ?? null}
+              setSelectedVersionId={setSelectedVersionId}
+            />
+          </DisclosureSection>
         </aside>
       </div>
     </div>

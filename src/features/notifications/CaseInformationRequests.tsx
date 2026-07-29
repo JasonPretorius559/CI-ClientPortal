@@ -80,12 +80,7 @@ export function CaseInformationRequests({ caseId }: { caseId: string }) {
   if (!isAdmin && !query.data?.items.length) return null;
 
   return (
-    <section className="space-y-3 border-b border-ink-200 pb-6">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Action required</p>
-        <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-ink-950">Information requests</h2>
-        <p className="mt-1 text-sm text-ink-600">Reply here so the adviser can continue the case without relying on email.</p>
-      </div>
+    <section className="space-y-3">
       {isAdmin ? (
         <div className="grid gap-3 rounded-2xl border border-surface-line bg-surface-canvas p-4 sm:grid-cols-2">
           <input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Request subject" className="min-h-11 rounded-xl border border-surface-line bg-white px-3.5 text-sm outline-none focus:border-ink-400 focus:ring-2 focus:ring-ink-100" />
