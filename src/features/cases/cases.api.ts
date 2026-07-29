@@ -202,10 +202,44 @@ export type AnalysisVersion = {
   satisfactionScoreFactors: unknown;
   evidenceValidation: unknown;
   accuracyValidation: unknown;
+  evidenceExplorer: EvidenceExplorer | null;
   tokenUsage: unknown;
   model: string | null;
   schemaKey: string | null;
   schemaVersion: string | number | null;
+};
+
+export type EvidenceConfidence = "low" | "medium" | "high";
+
+export type EvidenceClaim = {
+  id: string;
+  category: string;
+  finding: string;
+  quote: string | null;
+  sourceFileName: string | null;
+  pageNumber: number | null;
+  confidence: EvidenceConfidence | null;
+  verified: boolean;
+  supported: boolean;
+};
+
+export type EvidenceExplorer = {
+  version: 1;
+  available: boolean;
+  coverage: number | null;
+  claimCount: number;
+  supportedClaimCount: number;
+  warnings: string[];
+  issues: Array<{
+    code: string;
+    severity: "critical" | "warning";
+    message: string;
+  }>;
+  documents: Array<{
+    fileName: string;
+    textLength: number | null;
+  }>;
+  claims: EvidenceClaim[];
 };
 
 export type AnalyzeCaseResult = {
@@ -276,10 +310,92 @@ function normalizeAnalysisVersion(item: unknown): AnalysisVersion | null {
       null,
     evidenceValidation: item.evidenceValidation ?? null,
     accuracyValidation: item.accuracyValidation ?? null,
+    evidenceExplorer: normalizeEvidenceExplorer(item.evidenceExplorer),
     tokenUsage: item.tokenUsage ?? null,
     model: readString(item, ["openAiModel", "model", "modelName", "llmModel"]) || null,
     schemaKey: readString(item, ["structuredOutputSchemaKey", "schemaKey", "schemaName"]) || (schema ? readString(schema, ["key", "name"]) : null) || null,
     schemaVersion: readString(item, ["structuredOutputSchemaVersion", "schemaVersion"]) || readNumber(item, ["structuredOutputSchemaVersion", "schemaVersion"]) || (schema ? readString(schema, ["version"]) || readNumber(schema, ["version"]) : null),
+  };
+}
+
+function normalizeEvidenceExplorer(value: unknown): EvidenceExplorer | null {
+  if (!isRecord(value) || value.version !== 1) return null;
+
+  const claims = getArrayFromPayload(value.claims, ["claims"]).flatMap(
+    (candidate): EvidenceClaim[] => {
+      if (!isRecord(candidate)) return [];
+      const id = readString(candidate, ["id"]);
+      const finding = readString(candidate, ["finding"]);
+      if (!id || !finding) return [];
+      const confidenceValue = readString(candidate, ["confidence"]);
+      const confidence =
+        confidenceValue === "low" ||
+        confidenceValue === "medium" ||
+        confidenceValue === "high"
+          ? confidenceValue
+          : null;
+      return [
+        {
+          id,
+          category: readString(candidate, ["category"]) || "General",
+          finding,
+          quote: readString(candidate, ["quote"]) || null,
+          sourceFileName: readString(candidate, ["sourceFileName"]) || null,
+          pageNumber: readNumber(candidate, ["pageNumber"]),
+          confidence,
+          verified: candidate.verified === true,
+          supported: candidate.supported === true,
+        },
+      ];
+    },
+  );
+
+  const documents = getArrayFromPayload(value.documents, ["documents"]).flatMap(
+    (candidate) => {
+      if (!isRecord(candidate)) return [];
+      const fileName = readString(candidate, ["fileName"]);
+      return fileName
+        ? [{ fileName, textLength: readNumber(candidate, ["textLength"]) }]
+        : [];
+    },
+  );
+
+  const issues = getArrayFromPayload(value.issues, ["issues"]).flatMap(
+    (candidate) => {
+      if (!isRecord(candidate)) return [];
+      const code = readString(candidate, ["code"]);
+      const message = readString(candidate, ["message"]);
+      const severity = readString(candidate, ["severity"]);
+      const normalizedSeverity: "critical" | "warning" | null =
+        severity === "critical" || severity === "warning" ? severity : null;
+      if (
+        !code ||
+        !message ||
+        !normalizedSeverity
+      ) {
+        return [];
+      }
+      return [{ code, message, severity: normalizedSeverity }];
+    },
+  );
+
+  return {
+    version: 1,
+    available: value.available === true && claims.length > 0,
+    coverage: readNumber(value, ["coverage"]),
+    claimCount: readNumber(value, ["claimCount"]) ?? claims.length,
+    supportedClaimCount:
+      readNumber(value, ["supportedClaimCount"]) ??
+      claims.filter((claim) => claim.supported).length,
+    warnings: Array.isArray(value.warnings)
+      ? value.warnings.filter(
+          (warning): warning is string =>
+            typeof warning === "string" && Boolean(warning.trim()),
+        )
+      : [],
+    issues,
+    documents,
+    claims,
   };
 }
 

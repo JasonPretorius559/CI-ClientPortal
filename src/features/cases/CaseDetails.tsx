@@ -38,6 +38,7 @@ import {
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import { CaseCollaboration } from "./CaseCollaboration";
 import { CaseInformationRequests } from "../notifications/CaseInformationRequests";
+import { EvidenceExplorer } from "./EvidenceExplorer";
 import {
   analyzeCase,
   cancelCaseAnalysis,
@@ -432,6 +433,8 @@ function SelectedAnalysis({
         title={`Analysis Output: Version ${version.versionNumber}`}
         description="Review the comparison, recommendation, evidence quality, gaps, and warnings."
       />
+
+      <EvidenceExplorer evidence={version.evidenceExplorer} />
 
       {overview || headlineFindings.length ? (
         <section className="space-y-4 border border-surface-line bg-white p-5">
