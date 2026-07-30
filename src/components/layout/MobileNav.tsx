@@ -53,6 +53,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === "/cases"}
                 onClick={onClose}
                 className={({ isActive }) =>
                   cn(
