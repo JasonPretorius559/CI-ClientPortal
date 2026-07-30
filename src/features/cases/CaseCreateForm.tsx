@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, FileCheck2, FileSearch, GitCompareArrows, Loader, Paperclip, Presentation, Save, ShieldCheck, Upload as UploadIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../../components/ui/Alert";
@@ -171,7 +171,7 @@ function validateIncomingFiles(existingFiles: File[], incomingFiles: File[]) {
 
 function StepIndicator({ currentStep, onStepClick }: { currentStep: number; onStepClick: (step: number) => void }) {
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2">
       {steps.map((step, index) => {
         const isActive = index === currentStep;
         const isComplete = index < currentStep;
@@ -182,22 +182,22 @@ function StepIndicator({ currentStep, onStepClick }: { currentStep: number; onSt
             type="button"
             onClick={() => onStepClick(index)}
             className={[
-              "rounded-[1.5rem] border p-4 text-left transition",
+              "rounded-xl border px-2 py-3 text-left transition sm:px-3",
               isActive ? "border-ink-950 bg-white shadow-[0_14px_30px_rgba(17,17,17,0.06)]" : isComplete ? "border-ink-300 bg-white" : "border-ink-200 bg-white/70",
             ].join(" ")}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
               <span
                 className={[
-                  "flex h-9 w-9 items-center justify-center rounded-2xl border text-sm font-semibold",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold",
                   isActive || isComplete ? "border-ink-950 bg-ink-950 text-white" : "border-ink-300 bg-white text-ink-600",
                 ].join(" ")}
               >
                 {index + 1}
               </span>
               <div>
-                <p className="text-sm font-semibold text-ink-950">{step.title}</p>
-                <p className="mt-0.5 text-xs text-ink-600">{step.description}</p>
+                <p className="text-xs font-semibold leading-tight text-ink-950 sm:text-sm">{step.title}</p>
+                <p className="mt-0.5 hidden text-xs text-ink-600 sm:block">{step.description}</p>
               </div>
             </div>
           </button>
@@ -228,9 +228,11 @@ function SelectBox({
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
+  const inputId = useId();
+
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-ink-950">{label}</label>
+      <label htmlFor={inputId} className="text-sm font-medium text-ink-950">{label}</label>
 
       {error ? <Alert tone="error">{error}</Alert> : null}
 
@@ -243,6 +245,7 @@ function SelectBox({
         <div className="rounded-2xl border border-ink-200 bg-ink-50 p-3 text-sm text-ink-600">{emptyText}</div>
       ) : (
         <select
+          id={inputId}
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
@@ -516,21 +519,17 @@ export function CaseCreateForm() {
         <Alert tone="error">{mutation.error instanceof ApiError ? mutation.error.message : "Unable to create the case right now."}</Alert>
       ) : null}
 
-      <div className="surface-card px-5 py-5 sm:px-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(240px,0.8fr)] lg:items-end">
+      <div className="surface-card px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-500">Submission Flow</p>
-            <h2 className="mt-3 max-w-2xl text-[1.7rem] font-semibold leading-tight tracking-[-0.05em] text-ink-950 sm:text-[2.2rem]">
-              Build a clean case file with structure first, supporting detail second, and documents last.
-            </h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-500">Submission progress</p>
+            <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em] text-ink-950">{steps[currentStep]?.title}</h2>
           </div>
-          <div className="rounded-[1.5rem] border border-surface-line bg-surface-muted p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Current step</p>
-            <p className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-ink-950">{currentStep + 1} / {steps.length}</p>
-            <p className="mt-1 text-sm text-ink-600">{steps[currentStep]?.description}</p>
-          </div>
+          <p className="rounded-full bg-surface-muted px-3 py-1.5 text-xs font-semibold text-ink-600">
+            Step {currentStep + 1} of {steps.length}
+          </p>
         </div>
-        <div className="mt-6">
+        <div className="mt-4">
           <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
         </div>
       </div>

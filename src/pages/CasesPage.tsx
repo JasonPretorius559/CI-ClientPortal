@@ -10,7 +10,6 @@ import { ErrorState } from "../components/ui/ErrorState";
 import { FilterPill } from "../components/ui/FilterPill";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { PageHeader } from "../components/ui/PageHeader";
-import { PageTabs } from "../components/ui/PageTabs";
 import { PageShell } from "../components/ui/PageShell";
 import { SearchInput } from "../components/ui/SearchInput";
 import { CaseList } from "../features/cases/CaseList";
@@ -50,15 +49,6 @@ export function CasesPage() {
       <PageHeader
         title="My Cases"
         description="Review and track all cases submitted through your Cloud Insure account."
-        tabs={(
-          <PageTabs
-            items={[
-              { key: "all", label: "All cases", active: true, suffix: <span>{cases.length}</span> },
-              { key: "open", label: "Open" },
-              { key: "completed", label: "Completed" },
-            ]}
-          />
-        )}
         action={(
           <Button asChild>
             <Link to="/cases/new">
@@ -69,44 +59,21 @@ export function CasesPage() {
         )}
       />
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.85fr)]">
-        <div className="surface-card border-brand-100 bg-brand-50/55 px-5 py-6 sm:px-7">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-700">Case directory</p>
-          <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(220px,0.9fr)]">
-            <div>
-              <h2 className="max-w-2xl text-[1.8rem] font-semibold leading-tight tracking-[-0.05em] text-ink-950 sm:text-[2.3rem]">
-                Search, filter, and resume work from one consistent case index.
-              </h2>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-ink-600">
-                The list is structured around quick triage first, with active filters and search controls grouped into one persistent control deck.
-              </p>
-            </div>
-            <div className="rounded-[1.2rem] border border-brand-100 bg-white/75 p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Visible results</p>
-              <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-ink-950">{filteredCases.length}</p>
-              <p className="mt-2 text-sm text-ink-600">
-                Showing {statusFilter === "all" ? "all statuses" : statusFilter} with live search applied.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {!casesQuery.isLoading && !casesQuery.isError ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+      {!casesQuery.isLoading && !casesQuery.isError ? (
+          <section aria-label="Case summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <DashboardMetricCard label="Total cases" value={metrics.total} detail="All submissions" icon={<FolderKanban className="h-5 w-5" aria-hidden="true" />} />
             <DashboardMetricCard label="Open" value={metrics.open} detail="In progress" icon={<Clock3 className="h-5 w-5" aria-hidden="true" />} />
             <DashboardMetricCard label="Completed" value={metrics.completed} detail="Finished" icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />} />
             <DashboardMetricCard label="Needs attention" value={metrics.attention} detail="Flagged" icon={<ShieldAlert className="h-5 w-5" aria-hidden="true" />} />
-          </div>
+          </section>
         ) : null}
-      </section>
 
       <CommandBar sticky>
         <div className="toolbar">
           <div>
             <p className="page-toolbar-meta">Case filters</p>
             <p className="text-sm text-ink-600">
-              Find active work quickly and narrow your view without losing context.
+              {filteredCases.length} {filteredCases.length === 1 ? "result" : "results"}
             </p>
           </div>
         </div>

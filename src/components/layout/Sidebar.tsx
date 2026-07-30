@@ -41,6 +41,7 @@ export function Sidebar() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === "/cases"}
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm font-medium text-white/60 no-underline transition-colors duration-150 hover:border-white/10 hover:bg-white/[0.06] hover:text-white",

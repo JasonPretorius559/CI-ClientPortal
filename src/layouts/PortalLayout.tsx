@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, ShieldCheck } from "lucide-react";
 import { MobileNav } from "../components/layout/MobileNav";
 import { Sidebar } from "../components/layout/Sidebar";
 import { UserMenu } from "../components/layout/UserMenu";
@@ -36,8 +36,8 @@ export function PortalLayout() {
                 Cloud Insure
               </span>
               <div className="hidden items-center gap-2 text-xs font-semibold text-ink-500 lg:flex">
-                <span className="h-2 w-2 rounded-full bg-success-500 shadow-[0_0_0_4px_rgba(74,139,103,0.1)]" />
-                Analysis desk online
+                <ShieldCheck className="h-4 w-4 text-brand-700" aria-hidden="true" />
+                Secure analysis workspace
               </div>
             </div>
 
