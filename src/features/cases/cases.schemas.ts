@@ -44,6 +44,7 @@ export type CaseFileMetadata = {
   url?: string;
   mimeType: string;
   size: number;
+  pdfPassword?: string;
 };
 export type CreateCaseInput = z.infer<typeof createCaseSchema> & {
   files?: CaseFileMetadata[];

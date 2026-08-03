@@ -21,6 +21,13 @@ export function getMe() {
   });
 }
 
+export function updateReportPreferences(values: { fontFamily: string; logoDataUrl: string | null }) {
+  return apiFetch<unknown>("/api/auth/me/report-preferences", {
+    method: "PUT",
+    body: values,
+  });
+}
+
 export function register(values: RegisterInput) {
   return apiFetch<unknown>("/api/auth/register", {
     method: "POST",
