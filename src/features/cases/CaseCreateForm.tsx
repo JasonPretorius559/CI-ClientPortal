@@ -55,6 +55,14 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
+function fileIdentity(file: File) {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function isPdfFile(file: File) {
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
+
 const productGuidance = {
   comparison: {
     eyebrow: "Policy comparison",
@@ -271,6 +279,7 @@ export function CaseCreateForm() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [pdfPasswords, setPdfPasswords] = useState<Record<string, string>>({});
   const [dragActive, setDragActive] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState<string | null>(null);
   const [intakeData, setIntakeData] = useState<Record<string, unknown>>({});
@@ -375,7 +384,11 @@ export function CaseCreateForm() {
 
       for (const file of uploadedFiles) {
         setUploadingFileName(file.name);
-        files.push(await uploadCaseFile(file));
+        const uploaded = await uploadCaseFile(file);
+        files.push({
+          ...uploaded,
+          pdfPassword: isPdfFile(file) ? pdfPasswords[fileIdentity(file)] || undefined : undefined,
+        });
       }
 
       setUploadingFileName(null);
@@ -394,6 +407,7 @@ export function CaseCreateForm() {
       const id = getCaseId(response);
       reset();
       setUploadedFiles([]);
+      setPdfPasswords({});
 
       navigate(id ? `/cases/${encodeURIComponent(id)}` : "/cases", {
         replace: true,
@@ -683,7 +697,7 @@ export function CaseCreateForm() {
         <Card>
           <CardHeader>
             <CardTitle>Files</CardTitle>
-            <p className="mt-1 text-sm text-ink-600">Attach supporting documents. You can submit without files.</p>
+            <p className="mt-1 text-sm text-ink-600">Attach supporting documents. Password-protected PDFs are supported.</p>
           </CardHeader>
 
           <CardContent className="space-y-5">
@@ -722,9 +736,12 @@ export function CaseCreateForm() {
 
             {uploadedFiles.length > 0 ? (
               <div className="space-y-2">
-                {uploadedFiles.map((file, index) => (
-                  <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-[1.25rem] border border-ink-200 bg-white p-4">
-                    <div className="flex min-w-0 items-center gap-3">
+                {uploadedFiles.map((file, index) => {
+                  const identity = fileIdentity(file);
+                  return (
+                  <div key={identity} className="rounded-[1.25rem] border border-ink-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
                       <Paperclip className="h-4 w-4 shrink-0 text-ink-600" aria-hidden="true" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-ink-950">{file.name}</p>
@@ -735,12 +752,37 @@ export function CaseCreateForm() {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => setUploadedFiles((previous) => previous.filter((_, fileIndex) => fileIndex !== index))}
+                      onClick={() => {
+                        setUploadedFiles((previous) => previous.filter((_, fileIndex) => fileIndex !== index));
+                        setPdfPasswords((previous) => {
+                          const next = { ...previous };
+                          delete next[identity];
+                          return next;
+                        });
+                      }}
                     >
                       Remove
                     </Button>
+                    </div>
+
+                    {isPdfFile(file) ? (
+                      <label className="mt-4 block border-t border-ink-100 pt-4">
+                        <span className="text-sm font-medium text-ink-950">PDF password <span className="font-normal text-ink-500">(only if protected)</span></span>
+                        <input
+                          type="password"
+                          value={pdfPasswords[identity] || ""}
+                          maxLength={128}
+                          autoComplete="new-password"
+                          placeholder="Enter the document password"
+                          onChange={(event) => setPdfPasswords((previous) => ({ ...previous, [identity]: event.target.value }))}
+                          className="mt-2 h-11 w-full rounded-xl border border-ink-300 bg-white px-4 text-sm text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-ink-950 focus:ring-2 focus:ring-ink-200"
+                        />
+                        <span className="mt-1.5 block text-xs text-ink-500">Used once to read this file and never saved to the case.</span>
+                      </label>
+                    ) : null}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-[1.5rem] border border-ink-200 bg-ink-50 p-4 text-sm text-ink-600">
