@@ -16,6 +16,7 @@ import { useAuth } from "../features/auth/useAuth";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { PortalLayout } from "../layouts/PortalLayout";
 import { CaseDetailPage } from "../pages/CaseDetailPage";
+import { EvidenceExplorerPage } from "../pages/EvidenceExplorerPage";
 import { CasesPage } from "../pages/CasesPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
@@ -60,6 +61,7 @@ export function AppRouter() {
           <Route path="/cases" element={<CasesPage />} />
           <Route path="/cases/new" element={<NewCasePage />} />
           <Route path="/cases/:id" element={<CaseDetailPage />} />
+          <Route path="/cases/:id/evidence" element={<EvidenceExplorerPage />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/setup" replace />} />

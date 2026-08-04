@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   Bot,
   CheckCircle2,
-  ChevronDown,
   Download,
+  FileSearch2,
   FileText,
   FileWarning,
   History,
@@ -13,13 +14,14 @@ import {
   MessageSquare,
   Play,
   RefreshCw,
+  Search,
   Sparkles,
   X,
 } from "lucide-react";
 import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import { CommandBarGroup } from "../../components/ui/CommandBar";
+import { Dialog } from "../../components/ui/Dialog";
 import { SectionDivider } from "../../components/ui/PageShell";
 import { formatDate } from "../../lib/dates";
 import { ApiError } from "../../lib/api";
@@ -43,7 +45,6 @@ import {
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import { CaseCollaboration } from "./CaseCollaboration";
 import { CaseInformationRequests } from "../notifications/CaseInformationRequests";
-import { EvidenceExplorer } from "./EvidenceExplorer";
 import {
   analyzeCase,
   cancelCaseAnalysis,
@@ -57,51 +58,6 @@ import type { IntakeFieldDefinition } from "./cases.schemas";
 import { getCaseStatus, readCaseField } from "./cases.utils";
 
 const reportReadyAnalysisStatuses = new Set(["completed", "completed_with_warnings"]);
-
-function DisclosureSection({
-  title,
-  description,
-  icon,
-  meta,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  description?: string;
-  icon?: React.ReactNode;
-  meta?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <details
-      open={defaultOpen || undefined}
-      className="group overflow-hidden rounded-2xl border border-surface-line bg-white"
-    >
-      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 marker:content-none hover:bg-surface-subtle sm:px-5">
-        {icon ? (
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ink-950 text-white">
-            {icon}
-          </span>
-        ) : null}
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-ink-950">{title}</span>
-          {description ? (
-            <span className="mt-0.5 block text-xs leading-5 text-ink-500">
-              {description}
-            </span>
-          ) : null}
-        </span>
-        {meta ? <span className="shrink-0 text-xs font-medium text-ink-500">{meta}</span> : null}
-        <ChevronDown
-          className="h-4 w-4 shrink-0 text-ink-500 transition-transform group-open:rotate-180"
-          aria-hidden="true"
-        />
-      </summary>
-      <div className="border-t border-surface-line p-4 sm:p-5">{children}</div>
-    </details>
-  );
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -483,8 +439,6 @@ function SelectedAnalysis({
         description="Review the comparison, recommendation, evidence quality, gaps, and warnings."
       />
 
-      <EvidenceExplorer evidence={version.evidenceExplorer} />
-
       {overview || headlineFindings.length ? (
         <section className="space-y-4 border border-surface-line bg-white p-5">
           <SectionDivider title="Comparison Summary" />
@@ -820,6 +774,8 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [selectedDeliverableId, setSelectedDeliverableId] = useState("");
   const [intakeDialogType, setIntakeDialogType] = useState<CaseAnalysisType | null>(null);
+  const [workspaceDialog, setWorkspaceDialog] = useState<"analyses" | "documents" | "requests" | "collaboration" | "history" | "processing" | null>(null);
+  const [analysisSearch, setAnalysisSearch] = useState("");
   const [analysisIntakeData, setAnalysisIntakeData] = useState<Record<string, unknown>>({});
   const [analysisIntakeError, setAnalysisIntakeError] = useState("");
   const [pollingEnabled, setPollingEnabled] = useState(false);
@@ -872,6 +828,11 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     refetchInterval: pollingEnabled ? (streamStatus === "open" ? 30_000 : 4000) : false,
   });
   const deliverables = useMemo(() => analysisTypesQuery.data ?? [], [analysisTypesQuery.data]);
+  const filteredDeliverables = useMemo(() => {
+    const query = analysisSearch.trim().toLowerCase();
+    if (!query) return deliverables;
+    return deliverables.filter((item) => [item.name, item.description, item.workflowType].filter(Boolean).some((value) => String(value).toLowerCase().includes(query)));
+  }, [analysisSearch, deliverables]);
   const selectedDeliverable = deliverables.find((item) => item.id === selectedDeliverableId) ?? deliverables[0] ?? null;
   const caseTypeLabel = [caseType, `${deliverables.length} analysis type${deliverables.length === 1 ? "" : "s"}`]
     .filter(Boolean)
@@ -1000,6 +961,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   function requestAnalysis(type: CaseAnalysisType) {
     setSelectedDeliverableId(type.id);
+    setWorkspaceDialog(null);
     setAnalysisIntakeError("");
     if (type.intakeFields.length) {
       setAnalysisIntakeData(type.intakeData);
@@ -1066,8 +1028,33 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     },
   });
 
+  const evidenceHref = selectedVersion && selectedDeliverable
+    ? `/cases/${encodeURIComponent(caseId)}/evidence?analysisTypeId=${encodeURIComponent(selectedDeliverable.id)}&analysisId=${encodeURIComponent(selectedVersion.analysisId)}`
+    : "";
+
+  const fileList = files.length ? (
+    <div className="divide-y divide-surface-line border-y border-surface-line">
+      {files.map((file, index) => {
+        const fileName = getFileName(file, index);
+        const details = [getFileType(file), getFileSize(file)].filter(Boolean).join(" · ");
+        const downloadUrl = getFileDownloadUrl(file);
+        return (
+          <div key={`${fileName}-${index}`} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="break-all text-sm font-medium text-ink-950">{fileName}</p>
+              <p className="mt-1 text-xs text-ink-500">{details || "File details not provided"}</p>
+            </div>
+            {downloadUrl ? (
+              <a href={getDownloadHref(downloadUrl)} target="_blank" rel="noreferrer" download={fileName} className="inline-flex shrink-0 items-center justify-center border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50">Download</a>
+            ) : <span className="text-xs text-ink-500">Download unavailable</span>}
+          </div>
+        );
+      })}
+    </div>
+  ) : <p className="text-sm text-ink-600">No supporting documents were attached to this case.</p>;
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {intakeDialogType ? (
         <AnalysisIntakeDialog
           type={intakeDialogType}
@@ -1086,6 +1073,48 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
           onSubmit={submitAnalysisIntake}
         />
       ) : null}
+      <Dialog open={workspaceDialog === "analyses"} title="Choose an analysis" description="Open an existing result or run one analysis type directly." size="lg" onClose={() => setWorkspaceDialog(null)}>
+        {analysisTypesQuery.isLoading ? <p className="text-sm text-ink-600">Loading available analysis types...</p> : null}
+        {analysisTypesQuery.isError ? <Alert tone="error">{analysisTypesQuery.error instanceof ApiError ? analysisTypesQuery.error.message : "Unable to load analysis types."}</Alert> : null}
+        {deliverables.length ? (
+          <label className="relative mb-5 block">
+            <span className="sr-only">Filter analysis types</span>
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" aria-hidden="true" />
+            <input value={analysisSearch} onChange={(event) => setAnalysisSearch(event.target.value)} placeholder="Filter analysis types" className="h-11 w-full border border-ink-300 bg-white pl-11 pr-4 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200" />
+          </label>
+        ) : null}
+        <div className="divide-y divide-surface-line border-y border-surface-line">
+          {filteredDeliverables.map((deliverable) => {
+            const selected = selectedDeliverable?.id === deliverable.id;
+            return (
+              <article key={deliverable.id} className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedDeliverableId(deliverable.id); setWorkspaceDialog(null); }}>
+                  <span className="flex items-center gap-2">
+                    <span className={["h-2.5 w-2.5 rounded-full", deliverable.isActiveJob ? "animate-pulse bg-sky-500" : deliverable.latestVersionNumber !== null ? "bg-emerald-500" : "bg-ink-200"].join(" ")} />
+                    <span className="font-semibold text-ink-950">{deliverable.name}</span>
+                    {selected ? <Badge tone="outline">Viewing</Badge> : null}
+                  </span>
+                  <span className="mt-1 block text-sm text-ink-600">{deliverable.description || deliverable.workflowType.replace(/_/g, " ")}</span>
+                  <span className="mt-2 block text-xs font-medium text-ink-500">{analysisTypeStatusLabel(deliverable)}</span>
+                </button>
+                <Button type="button" variant={deliverable.isActiveJob ? "secondary" : "primary"} className="shrink-0" isLoading={deliverable.isActiveJob ? cancelMutation.isPending : analyzeMutation.isPending && analyzeMutation.variables?.type.id === deliverable.id} disabled={deliverable.isActiveJob ? cancelMutation.isPending : !deliverable.canRun || analyzeMutation.isPending || cancelMutation.isPending} onClick={() => deliverable.isActiveJob ? cancelMutation.mutate() : requestAnalysis(deliverable)}>
+                  {!deliverable.isActiveJob ? <Play className="h-4 w-4" aria-hidden="true" /> : null}{analysisTypeActionLabel(deliverable)}
+                </Button>
+              </article>
+            );
+          })}
+        </div>
+        {deliverables.length && !filteredDeliverables.length ? <p className="py-6 text-center text-sm text-ink-600">No analysis types match that filter.</p> : null}
+        {!deliverables.length && !analysisTypesQuery.isLoading ? <p className="text-sm text-ink-600">No active analysis types are configured for this case type.</p> : null}
+      </Dialog>
+      <Dialog open={workspaceDialog === "documents"} title="Supporting documents" description={`${filesAttachedCount} file${filesAttachedCount === 1 ? "" : "s"} attached to this case.`} onClose={() => setWorkspaceDialog(null)}>{fileList}</Dialog>
+      <Dialog open={workspaceDialog === "requests"} title="Information requests" description="Follow-ups and missing inputs for this case." size="lg" onClose={() => setWorkspaceDialog(null)}>{caseId ? <CaseInformationRequests caseId={caseId} /> : null}</Dialog>
+      <Dialog open={workspaceDialog === "collaboration"} title="Collaboration" description="Case comments and team discussion." size="lg" onClose={() => setWorkspaceDialog(null)}>{caseId ? <CaseCollaboration caseId={caseId} /> : null}</Dialog>
+      <Dialog open={workspaceDialog === "history"} title="Analysis history" description={`Versions for ${selectedDeliverable?.name || "the selected analysis"}.`} onClose={() => setWorkspaceDialog(null)}>
+        <AnalysisVersionList versions={versions} selectedVersion={selectedVersion ?? null} setSelectedVersionId={(analysisId) => { setSelectedVersionId(analysisId); setWorkspaceDialog(null); }} />
+      </Dialog>
+      <Dialog open={workspaceDialog === "processing"} title="Processing details" description="Document preparation and completed analysis stages." onClose={() => setWorkspaceDialog(null)}><AnalysisProgressCard detail={analysisDetail} active={false} /></Dialog>
+
       <section className="rounded-2xl border border-surface-line bg-white px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -1122,46 +1151,31 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-surface-line bg-white shadow-soft">
-        <div className="flex items-start gap-3 border-b border-surface-line px-4 py-4 sm:px-5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ink-950 text-white"><Layers3 className="h-4 w-4" aria-hidden="true" /></span>
-          <div><h2 className="text-sm font-semibold text-ink-950">Choose an analysis</h2><p className="mt-1 text-xs leading-5 text-ink-500">Run the analysis you need. Each type keeps its own versions, result, and report.</p></div>
-        </div>
-        {analysisTypesQuery.isLoading ? (
-          <div className="p-5 text-sm text-ink-600">Loading available analysis types...</div>
-        ) : analysisTypesQuery.isError ? (
-          <div className="p-4"><Alert tone="error">{analysisTypesQuery.error instanceof ApiError ? analysisTypesQuery.error.message : "Unable to load analysis types."}</Alert></div>
-        ) : deliverables.length ? (
-          <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
-            {deliverables.map((deliverable) => {
-              const selected = selectedDeliverable?.id === deliverable.id;
-              const failed = ["failed", "timed_out", "unable_to_analyse"].includes(deliverable.status);
-              const completed = ["completed", "completed_with_warnings"].includes(deliverable.status);
-              return (
-                <article key={deliverable.id} className={["flex min-h-48 flex-col overflow-hidden rounded-2xl border transition", selected ? "border-ink-950 shadow-[0_16px_36px_rgba(17,17,17,0.10)]" : "border-ink-200 hover:border-ink-400"].join(" ")}>
-                  <button type="button" aria-pressed={selected} onClick={() => setSelectedDeliverableId(deliverable.id)} className={["flex flex-1 items-start gap-3 p-4 text-left", selected ? "bg-ink-950 text-white" : "bg-white text-ink-950"].join(" ")}>
-                    <span className={["mt-1 h-2.5 w-2.5 shrink-0 rounded-full", deliverable.isActiveJob ? "animate-pulse bg-sky-400" : completed ? "bg-emerald-500" : failed ? "bg-red-500" : deliverable.latestVersionNumber !== null ? "bg-amber-500" : selected ? "bg-white/35" : "bg-ink-200"].join(" ")} />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{deliverable.name}</span>
-                      <span className={["mt-1 block text-xs leading-5", selected ? "text-white/60" : "text-ink-500"].join(" ")}>{deliverable.description || deliverable.workflowType.replace(/_/g, " ")}</span>
-                      <span className={["mt-3 block text-[11px] font-semibold uppercase tracking-[0.12em]", selected ? "text-white/70" : failed ? "text-red-700" : "text-ink-600"].join(" ")}>{analysisTypeStatusLabel(deliverable)}</span>
-                    </span>
-                  </button>
-                  <div className="border-t border-ink-200 bg-ink-50 p-3">
-                    <Button type="button" variant={deliverable.isActiveJob ? "secondary" : "primary"} className="w-full" isLoading={deliverable.isActiveJob ? cancelMutation.isPending : analyzeMutation.isPending && analyzeMutation.variables?.type.id === deliverable.id} disabled={deliverable.isActiveJob ? cancelMutation.isPending : !deliverable.canRun || analyzeMutation.isPending || cancelMutation.isPending} onClick={() => deliverable.isActiveJob ? cancelMutation.mutate() : requestAnalysis(deliverable)}>
-                      {!deliverable.isActiveJob ? <Play className="h-4 w-4" aria-hidden="true" /> : null}
-                      {analysisTypeActionLabel(deliverable)}
-                    </Button>
-                    {!deliverable.canRun && !deliverable.isActiveJob ? <p className="mt-2 text-center text-[11px] leading-4 text-ink-500">{deliverable.blockedReason}</p> : null}
-                  </div>
-                </article>
-              );
-            })}
+      <section className="overflow-hidden rounded-2xl border border-ink-950 bg-ink-950 text-white shadow-soft">
+        <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-4">
+            <span className="grid h-11 w-11 shrink-0 place-items-center border border-white/15 bg-white/10"><Layers3 className="h-5 w-5" aria-hidden="true" /></span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">Active analysis</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em]">{selectedDeliverable?.name || "Choose an analysis"}</h2>
+              <p className="mt-1 text-sm leading-6 text-white/60">{selectedDeliverable ? analysisTypeStatusLabel(selectedDeliverable) : "Select the analysis you need for this case."}</p>
+            </div>
           </div>
-        ) : (
-          <div className="p-5 text-sm text-ink-600">No active analysis types are configured for this case type.</div>
-        )}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button type="button" variant="secondary" onClick={() => setWorkspaceDialog("analyses")}>Change analysis</Button>
+            {selectedDeliverable ? <Button type="button" className="bg-white text-ink-950 hover:bg-ink-100" isLoading={selectedDeliverable.isActiveJob ? cancelMutation.isPending : analyzeMutation.isPending && analyzeMutation.variables?.type.id === selectedDeliverable.id} disabled={selectedDeliverable.isActiveJob ? cancelMutation.isPending : !selectedDeliverable.canRun || analyzeMutation.isPending || cancelMutation.isPending} onClick={() => selectedDeliverable.isActiveJob ? cancelMutation.mutate() : requestAnalysis(selectedDeliverable)}>{!selectedDeliverable.isActiveJob ? <Play className="h-4 w-4" aria-hidden="true" /> : null}{analysisTypeActionLabel(selectedDeliverable)}</Button> : null}
+          </div>
+        </div>
       </section>
+
+      <nav aria-label="Case tools" className="grid grid-cols-2 gap-2 rounded-2xl border border-surface-line bg-white p-2 sm:grid-cols-3 lg:grid-cols-6">
+        <Button type="button" variant="ghost" onClick={() => setWorkspaceDialog("documents")}><FileText className="h-4 w-4" aria-hidden="true" />Documents <span className="text-ink-400">{filesAttachedCount}</span></Button>
+        <Button type="button" variant="ghost" onClick={() => setWorkspaceDialog("requests")}><MessageSquare className="h-4 w-4" aria-hidden="true" />Requests</Button>
+        <Button type="button" variant="ghost" onClick={() => setWorkspaceDialog("collaboration")}><MessageSquare className="h-4 w-4" aria-hidden="true" />Discussion</Button>
+        <Button type="button" variant="ghost" onClick={() => setWorkspaceDialog("history")}><History className="h-4 w-4" aria-hidden="true" />History <span className="text-ink-400">{versions.length}</span></Button>
+        <Button type="button" variant="ghost" onClick={() => setWorkspaceDialog("processing")}><Bot className="h-4 w-4" aria-hidden="true" />Process</Button>
+        <Button type="button" variant="ghost" onClick={() => { void statusQuery.refetch(); void versionsQuery.refetch(); }}><RefreshCw className="h-4 w-4" aria-hidden="true" />Refresh</Button>
+      </nav>
 
       <AnalysisBanner
         detail={analysisDetail}
@@ -1176,145 +1190,21 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       ) : null}
       {running ? (
         <AnalysisProgressCard detail={analysisDetail} active />
-      ) : (
-        <DisclosureSection
-          title="Processing details"
-          description="Document preparation and completed analysis stages."
-          meta={`${analysisDetail.progress ?? 100}%`}
-        >
-          <AnalysisProgressCard detail={analysisDetail} active={false} />
-        </DisclosureSection>
-      )}
+      ) : null}
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <main className="min-w-0 space-y-6">
-          <SelectedAnalysis
-            version={selectedVersion ?? null}
-            current={current}
-          />
-
-          <DisclosureSection
-            title="Supporting documents"
-            description="Documents and attachments submitted with this case."
-            icon={<FileText className="h-4 w-4" aria-hidden="true" />}
-            meta={`${filesAttachedCount} file${filesAttachedCount === 1 ? "" : "s"}`}
-          >
-            <div>
-              {files.length ? (
-                <div className="space-y-0 border-y border-ink-200">
-                  {files.map((file, index) => {
-                    const fileName = getFileName(file, index);
-                    const details = [getFileType(file), getFileSize(file)]
-                      .filter(Boolean)
-                      .join(" - ");
-                    const downloadUrl = getFileDownloadUrl(file);
-                    return (
-                      <div
-                        key={`${fileName}-${index}`}
-                        className="flex min-w-0 flex-col gap-3 border-b border-ink-200 py-4 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="break-all text-sm font-medium text-ink-950">
-                            {fileName}
-                          </p>
-                          <p className="mt-1 break-words text-xs text-ink-500">
-                            {details || "File details not provided"}
-                          </p>
-                        </div>
-                        {downloadUrl ? (
-                          <a
-                            href={getDownloadHref(downloadUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                            download={fileName}
-                            className="inline-flex shrink-0 items-center justify-center border border-ink-300 px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-50"
-                          >
-                            Download
-                          </a>
-                        ) : (
-                          <span className="shrink-0 text-xs text-ink-500">
-                            Download unavailable
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-ink-600">
-                  No supporting documents were attached to this case.
-                </p>
-              )}
-            </div>
-          </DisclosureSection>
-          {caseId ? (
-            <DisclosureSection
-              title="Information requests"
-              description="Follow-ups and missing inputs for this case."
-              icon={<MessageSquare className="h-4 w-4" aria-hidden="true" />}
-            >
-              <CaseInformationRequests caseId={caseId} />
-            </DisclosureSection>
-          ) : null}
-          {caseId ? (
-            <DisclosureSection
-              title="Collaboration"
-              description="Case comments and team discussion."
-              icon={<MessageSquare className="h-4 w-4" aria-hidden="true" />}
-            >
-              <CaseCollaboration caseId={caseId} />
-            </DisclosureSection>
-          ) : null}
-        </main>
-
-        <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
-          <section className="space-y-4 rounded-2xl border border-surface-line bg-white p-5 shadow-soft">
-            <SectionDivider
-              title={selectedDeliverable?.name || "Case controls"}
-              description="View versions or export the selected analysis result."
-            />
-            <CommandBarGroup className="xl:flex-col">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => generateReportMutation.mutate()}
-                isLoading={generateReportMutation.isPending}
-                disabled={!caseId || !selectedVersion || !isCompleted(selectedVersion)}
-                className="w-full"
-              >
-                <Download className="h-4 w-4" aria-hidden="true" />
-                Generate Report
-              </Button>
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-                <Button
-                  type="button"
-                  variant="secondary"
-                    onClick={() => {
-                      void statusQuery.refetch();
-                      void versionsQuery.refetch();
-                    }}
-                  >
-                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                  Refresh
-                </Button>
-              </div>
-            </CommandBarGroup>
-          </section>
-
-          <DisclosureSection
-            title="Analysis history"
-            description="Switch between historical outputs."
-            icon={<History className="h-4 w-4" aria-hidden="true" />}
-            meta={`${versions.length} version${versions.length === 1 ? "" : "s"}`}
-          >
-            <AnalysisVersionList
-              versions={versions}
-              selectedVersion={selectedVersion ?? null}
-              setSelectedVersionId={setSelectedVersionId}
-            />
-          </DisclosureSection>
-        </aside>
-      </div>
+      <section className="min-w-0 space-y-6 rounded-2xl border border-surface-line bg-white p-5 shadow-soft sm:p-7">
+        <div className="flex flex-col gap-4 border-b border-surface-line pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">Analysis workspace</p>
+            <h2 className="mt-2 text-lg font-semibold text-ink-950">{selectedDeliverable?.name || "No analysis selected"}</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {selectedVersion?.evidenceExplorer?.available && evidenceHref ? <Button asChild variant="secondary"><Link to={evidenceHref}><FileSearch2 className="h-4 w-4" aria-hidden="true" />Evidence</Link></Button> : null}
+            <Button type="button" variant="secondary" onClick={() => generateReportMutation.mutate()} isLoading={generateReportMutation.isPending} disabled={!caseId || !selectedVersion || !isCompleted(selectedVersion)}><Download className="h-4 w-4" aria-hidden="true" />Generate report</Button>
+          </div>
+        </div>
+        <SelectedAnalysis version={selectedVersion ?? null} current={current} />
+      </section>
     </div>
   );
 }
