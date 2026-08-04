@@ -13,7 +13,6 @@ const optionalDate = z
 export const createCaseSchema = z.object({
   caseTitle: z.string().min(1, "Case title is required."),
   caseTypeId: z.string().min(1, "Case type ID is required."),
-  linkedCaseTypeId: z.string().min(1, "Linked case type ID is required."),
   entityTypeId: z.string().optional(),
   description: z.string().min(1, "Description is required."),
   incidentDate: optionalDate,

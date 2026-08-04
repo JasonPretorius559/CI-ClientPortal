@@ -173,6 +173,59 @@ export async function getUserLinkedCaseTypes(caseTypeId: string) {
   return normalizeLookupResponse(response, ["linkedCaseTypes", "data"]);
 }
 
+export type CaseAnalysisType = {
+  id: string;
+  name: string;
+  description: string | null;
+  workflowType: string;
+  intakeFields: IntakeFieldDefinition[];
+  intakeData: Record<string, unknown>;
+  status: string;
+  latestVersionNumber: number | null;
+  latestAnalysisId: string | null;
+  latestJobId: string | null;
+  error: string | null;
+  canRun: boolean;
+  blockedReason: string | null;
+  isActiveJob: boolean;
+};
+
+export function normalizeCaseAnalysisTypesResponse(response: unknown): CaseAnalysisType[] {
+  if (!isRecord(response)) return [];
+  const data = isRecord(response.data) ? response.data : response;
+  const items = Array.isArray(data.analysisTypes) ? data.analysisTypes : [];
+  return items.flatMap((candidate): CaseAnalysisType[] => {
+    if (!isRecord(candidate)) return [];
+    const id = readString(candidate, ["id", "_id"]);
+    const name = readString(candidate, ["name", "label", "title"]);
+    if (!id || !name) return [];
+    return [{
+      id,
+      name,
+      description: readString(candidate, ["description"]) || null,
+      workflowType: readString(candidate, ["workflowType"]) || "other",
+      intakeFields: normalizeIntakeFields(candidate.intakeFields),
+      intakeData: isRecord(candidate.intakeData) ? candidate.intakeData : {},
+      status: readString(candidate, ["status"]) || "not_started",
+      latestVersionNumber: readNumber(candidate, ["latestVersionNumber"]),
+      latestAnalysisId: readString(candidate, ["latestAnalysisId"]) || null,
+      latestJobId: readString(candidate, ["latestJobId"]) || null,
+      error: readString(candidate, ["error"]) || null,
+      canRun: candidate.canRun !== false,
+      blockedReason: readString(candidate, ["blockedReason"]) || null,
+      isActiveJob: candidate.isActiveJob === true,
+    }];
+  });
+}
+
+export async function getCaseAnalysisTypes(caseId: string): Promise<CaseAnalysisType[]> {
+  const response = await apiFetch<unknown>(
+    `/api/auth/user-cases/${encodeURIComponent(caseId)}/analysis-types`,
+    { method: "GET", cache: "no-store" },
+  );
+  return normalizeCaseAnalysisTypesResponse(response);
+}
+
 export async function getUserEntityTypes() {
   const response = await apiFetch<unknown>("/api/auth/entity-types", {
     method: "GET",
@@ -207,6 +260,7 @@ export type AnalysisVersion = {
   model: string | null;
   schemaKey: string | null;
   schemaVersion: string | number | null;
+  linkedCaseType: { id: string; name: string; workflowType: string } | null;
 };
 
 export type EvidenceConfidence = "low" | "medium" | "high";
@@ -276,6 +330,7 @@ function normalizeAnalysisVersion(item: unknown): AnalysisVersion | null {
     : null;
   const analysisId = readString(item, ["analysisId", "_id", "id"]);
   const versionNumber = readNumber(item, ["versionNumber", "version", "number"]);
+  const linkedCaseType = isRecord(item.linkedCaseType) ? item.linkedCaseType : null;
 
   if (!analysisId || versionNumber === null) {
     return null;
@@ -315,6 +370,11 @@ function normalizeAnalysisVersion(item: unknown): AnalysisVersion | null {
     model: readString(item, ["openAiModel", "model", "modelName", "llmModel"]) || null,
     schemaKey: readString(item, ["structuredOutputSchemaKey", "schemaKey", "schemaName"]) || (schema ? readString(schema, ["key", "name"]) : null) || null,
     schemaVersion: readString(item, ["structuredOutputSchemaVersion", "schemaVersion"]) || readNumber(item, ["structuredOutputSchemaVersion", "schemaVersion"]) || (schema ? readString(schema, ["version"]) || readNumber(schema, ["version"]) : null),
+    linkedCaseType: linkedCaseType ? {
+      id: readString(linkedCaseType, ["id", "_id"]),
+      name: readString(linkedCaseType, ["name", "label", "title"]),
+      workflowType: readString(linkedCaseType, ["workflowType"]) || "other",
+    } : null,
   };
 }
 
@@ -476,16 +536,22 @@ export async function analyzeCase({
   inputHash,
   model,
   force,
+  linkedCaseTypeId,
+  intakeData,
 }: {
   caseId: string;
   inputHash?: string;
   model?: string;
   force?: boolean;
+  linkedCaseTypeId: string;
+  intakeData?: Record<string, unknown>;
 }): Promise<AnalyzeCaseResult> {
   const body: Record<string, unknown> = {};
   if (inputHash?.trim()) body.inputHash = inputHash.trim();
   if (model?.trim()) body.openAiModel = model.trim();
   if (force) body.force = true;
+  if (linkedCaseTypeId?.trim()) body.linkedCaseTypeId = linkedCaseTypeId.trim();
+  if (intakeData && Object.keys(intakeData).length) body.intakeData = intakeData;
 
   const response = await fetch(
     `${API_BASE_URL}/api/auth/user-cases/${encodeURIComponent(caseId)}/analyze`,

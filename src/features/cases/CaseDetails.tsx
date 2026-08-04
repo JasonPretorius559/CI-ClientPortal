@@ -9,10 +9,12 @@ import {
   FileText,
   FileWarning,
   History,
+  Layers3,
   MessageSquare,
   Play,
   RefreshCw,
   Sparkles,
+  X,
 } from "lucide-react";
 import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
@@ -45,10 +47,13 @@ import { EvidenceExplorer } from "./EvidenceExplorer";
 import {
   analyzeCase,
   cancelCaseAnalysis,
+  getCaseAnalysisTypes,
   getCaseAnalysisStatus,
   getCaseAnalysisVersions,
+  type CaseAnalysisType,
   type AnalysisVersion,
 } from "./cases.api";
+import type { IntakeFieldDefinition } from "./cases.schemas";
 import { getCaseStatus, readCaseField } from "./cases.utils";
 
 const reportReadyAnalysisStatuses = new Set(["completed", "completed_with_warnings"]);
@@ -714,11 +719,109 @@ function SelectedAnalysis({
 //   );
 // }
 
+function analysisTypeStatusLabel(type: CaseAnalysisType) {
+  if (type.isActiveJob) return formatStatus(type.status);
+  if (type.latestVersionNumber !== null && ["completed", "completed_with_warnings"].includes(type.status)) {
+    return `Completed · Version ${type.latestVersionNumber}`;
+  }
+  if (["failed", "timed_out", "cancelled", "unable_to_analyse"].includes(type.status)) return formatStatus(type.status);
+  return type.latestVersionNumber !== null ? `${formatStatus(type.status)} · Version ${type.latestVersionNumber}` : "Not run";
+}
+
+function analysisTypeActionLabel(type: CaseAnalysisType) {
+  if (type.isActiveJob) return "Cancel";
+  if (["failed", "timed_out", "cancelled", "unable_to_analyse"].includes(type.status)) return "Retry";
+  return type.latestVersionNumber !== null ? "Run New Version" : "Run";
+}
+
+function AnalysisIntakeField({
+  field,
+  value,
+  onChange,
+}: {
+  field: IntakeFieldDefinition;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
+  const sharedClass = "w-full rounded-xl border border-ink-300 bg-white px-4 text-sm text-ink-950 outline-none transition focus:border-ink-950 focus:ring-2 focus:ring-ink-200";
+  return (
+    <label className={field.type === "textarea" ? "space-y-2 sm:col-span-2" : "space-y-2"}>
+      <span className="text-sm font-medium text-ink-950">{field.label}{field.required ? " *" : ""}</span>
+      {field.helpText ? <span className="block text-xs leading-5 text-ink-500">{field.helpText}</span> : null}
+      {field.type === "select" ? (
+        <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)} className={`${sharedClass} h-12`}>
+          <option value="">Select an option</option>
+          {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+      ) : field.type === "boolean" ? (
+        <span className="flex h-12 items-center gap-3 rounded-xl border border-ink-300 bg-white px-4">
+          <input type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 rounded border-ink-300 text-ink-950 focus:ring-ink-500" />
+          <span className="text-sm text-ink-700">{value === true ? "Yes" : "No"}</span>
+        </span>
+      ) : field.type === "textarea" ? (
+        <textarea value={String(value ?? "")} onChange={(event) => onChange(event.target.value)} rows={4} className={`${sharedClass} py-3`} />
+      ) : (
+        <input type={field.type === "phone" ? "tel" : field.type} value={String(value ?? "")} onChange={(event) => onChange(field.type === "number" && event.target.value !== "" ? Number(event.target.value) : event.target.value)} className={`${sharedClass} h-12`} />
+      )}
+    </label>
+  );
+}
+
+function AnalysisIntakeDialog({
+  type,
+  values,
+  error,
+  isSubmitting,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  type: CaseAnalysisType;
+  values: Record<string, unknown>;
+  error: string;
+  isSubmitting: boolean;
+  onChange: (key: string, value: unknown) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <>
+      <div className="dialog-overlay" aria-hidden="true" onClick={onClose} />
+      <div className="dialog-frame" role="dialog" aria-modal="true" aria-labelledby="analysis-intake-title">
+        <section className="dialog-shell">
+          <div className="flex items-start justify-between gap-4 border-b border-surface-line px-5 py-5 sm:px-6">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500">Before this analysis runs</p>
+              <h2 id="analysis-intake-title" className="mt-2 text-xl font-semibold tracking-[-0.03em] text-ink-950">{type.name}</h2>
+              <p className="mt-1 text-sm leading-6 text-ink-600">Complete the questions configured specifically for this analysis type.</p>
+            </div>
+            <Button type="button" variant="ghost" className="px-2" aria-label="Close analysis questions" onClick={onClose}><X className="h-5 w-5" aria-hidden="true" /></Button>
+          </div>
+          <form className="space-y-5 p-5 sm:p-6" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {type.intakeFields.map((field) => <AnalysisIntakeField key={field.key} field={field} value={values[field.key]} onChange={(value) => onChange(field.key, value)} />)}
+            </div>
+            {error ? <Alert tone="error">{error}</Alert> : null}
+            <div className="flex flex-col-reverse gap-3 border-t border-surface-line pt-5 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+              <Button type="submit" isLoading={isSubmitting}><Play className="h-4 w-4" aria-hidden="true" />{analysisTypeActionLabel(type)}</Button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </>
+  );
+}
+
 export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const streamStatus = useAnalysisStreamStatus();
   const [selectedVersionId, setSelectedVersionId] = useState("");
+  const [selectedDeliverableId, setSelectedDeliverableId] = useState("");
+  const [intakeDialogType, setIntakeDialogType] = useState<CaseAnalysisType | null>(null);
+  const [analysisIntakeData, setAnalysisIntakeData] = useState<Record<string, unknown>>({});
+  const [analysisIntakeError, setAnalysisIntakeError] = useState("");
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [duplicateReused, setDuplicateReused] = useState(false);
   const inputHash = "";
@@ -736,14 +839,6 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   const caseType =
     readDisplay(caseItem, ["caseType", "type", "caseTypeName"]) ||
     "Case Analysis";
-  const linkedCaseType = readDisplay(caseItem, [
-    "linkedCaseType",
-    "linkedType",
-    "linkedCaseTypeName",
-  ]);
-  const caseTypeLabel = [caseType, linkedCaseType]
-    .filter((value, index, values) => value && values.indexOf(value) === index)
-    .join(" · ");
   const submittedDate = readDisplay(caseItem, [
     "submittedDate",
     "createdAt",
@@ -770,6 +865,17 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     enabled: Boolean(caseId),
     refetchInterval: pollingEnabled ? (streamStatus === "open" ? 30_000 : 4000) : false,
   });
+  const analysisTypesQuery = useQuery({
+    queryKey: ["case-analysis-types", caseId],
+    queryFn: () => getCaseAnalysisTypes(caseId),
+    enabled: Boolean(caseId),
+    refetchInterval: pollingEnabled ? (streamStatus === "open" ? 30_000 : 4000) : false,
+  });
+  const deliverables = useMemo(() => analysisTypesQuery.data ?? [], [analysisTypesQuery.data]);
+  const selectedDeliverable = deliverables.find((item) => item.id === selectedDeliverableId) ?? deliverables[0] ?? null;
+  const caseTypeLabel = [caseType, `${deliverables.length} analysis type${deliverables.length === 1 ? "" : "s"}`]
+    .filter(Boolean)
+    .join(" · ");
   const activeProgressQuery = useQuery({
     queryKey: ["analysis-progress", "active"],
     queryFn: getActiveAnalysisProgress,
@@ -781,10 +887,15 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
     queryFn: () => getCaseAnalysisVersions(caseId),
     enabled: Boolean(caseId),
   });
-  const versions = useMemo(
+  const allVersions = useMemo(
     () => versionsQuery.data ?? [],
     [versionsQuery.data],
   );
+  const versions = useMemo(() => allVersions.filter((version) => {
+    if (!selectedDeliverable) return true;
+    if (version.linkedCaseType?.id) return version.linkedCaseType.id === selectedDeliverable.id;
+    return selectedDeliverable.id === deliverables[0]?.id;
+  }), [allVersions, deliverables, selectedDeliverable]);
   const current = useMemo(() => currentVersion(versions), [versions]);
   const selectedVersion =
     versions.find((version) => version.analysisId === selectedVersionId) ??
@@ -796,6 +907,15 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   }, [activeProgressQuery.data, caseId, statusQuery.data]);
   const analysisStatus = analysisDetail.status;
   const running = isActiveAnalysisStatus(analysisStatus) || pollingEnabled;
+
+  useEffect(() => {
+    if (!selectedDeliverableId && deliverables[0]) setSelectedDeliverableId(deliverables[0].id);
+  }, [deliverables, selectedDeliverableId]);
+
+  useEffect(() => {
+    setSelectedVersionId("");
+    setDuplicateReused(false);
+  }, [selectedDeliverableId]);
 
   useEffect(() => {
     if (!selectedVersionId && current) setSelectedVersionId(current.analysisId);
@@ -811,10 +931,11 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       setPollingEnabled(false);
       void Promise.all([
         versionsQuery.refetch(),
+        analysisTypesQuery.refetch(),
         queryClient.invalidateQueries({ queryKey: ["cases", "mine"] }),
       ]);
     }
-  }, [analysisStatus, pollingEnabled, queryClient, versionsQuery]);
+  }, [analysisStatus, analysisTypesQuery, pollingEnabled, queryClient, versionsQuery]);
 
   useEffect(() => {
     if (!pollingEnabled) return;
@@ -843,28 +964,63 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
   }, [analysisDetail, analysisStatus, pollingEnabled, showToast]);
 
   const analyzeMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: ({ type, intakeData }: { type: CaseAnalysisType; intakeData: Record<string, unknown> }) =>
       analyzeCase({
         caseId,
         inputHash,
         model,
-        force: Boolean(current && isCompleted(current)),
+        force: type.latestVersionNumber !== null,
+        linkedCaseTypeId: type.id,
+        intakeData,
       }),
-    onSuccess: async (result) => {
+    onSuccess: async (result, variables) => {
       const data = dataRecord(result.payload);
       const duplicate = data.duplicateAnalysis === true;
       const returnedAnalysisId = toDisplayValue(data.analysisId);
 
+      setSelectedDeliverableId(variables.type.id);
+      setIntakeDialogType(null);
+      setAnalysisIntakeError("");
       setDuplicateReused(duplicate);
       if (returnedAnalysisId) setSelectedVersionId(returnedAnalysisId);
       if (result.status === 202) setPollingEnabled(true);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["cases", "mine"] }),
+        analysisTypesQuery.refetch(),
         statusQuery.refetch(),
         versionsQuery.refetch(),
       ]);
     },
+    onError: (error) => {
+      if (intakeDialogType) {
+        setAnalysisIntakeError(error instanceof ApiError ? error.message : "Unable to run this analysis.");
+      }
+    },
   });
+
+  function requestAnalysis(type: CaseAnalysisType) {
+    setSelectedDeliverableId(type.id);
+    setAnalysisIntakeError("");
+    if (type.intakeFields.length) {
+      setAnalysisIntakeData(type.intakeData);
+      setIntakeDialogType(type);
+      return;
+    }
+    analyzeMutation.mutate({ type, intakeData: {} });
+  }
+
+  function submitAnalysisIntake() {
+    if (!intakeDialogType) return;
+    const missingField = intakeDialogType.intakeFields.find((field) => {
+      const value = analysisIntakeData[field.key];
+      return field.required && (value === undefined || value === null || value === "");
+    });
+    if (missingField) {
+      setAnalysisIntakeError(`${missingField.label} is required.`);
+      return;
+    }
+    analyzeMutation.mutate({ type: intakeDialogType, intakeData: analysisIntakeData });
+  }
 
   const generateReportMutation = useMutation({
     mutationFn: async () => {
@@ -897,6 +1053,7 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
       showToast({ tone: "success", title: "Analysis cancelled." });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["cases", "mine"] }),
+        analysisTypesQuery.refetch(),
         statusQuery.refetch(),
         activeProgressQuery.refetch(),
         versionsQuery.refetch(),
@@ -911,6 +1068,24 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
 
   return (
     <div className="space-y-7">
+      {intakeDialogType ? (
+        <AnalysisIntakeDialog
+          type={intakeDialogType}
+          values={analysisIntakeData}
+          error={analysisIntakeError}
+          isSubmitting={analyzeMutation.isPending}
+          onChange={(key, value) => {
+            setAnalysisIntakeError("");
+            setAnalysisIntakeData((currentValues) => ({ ...currentValues, [key]: value }));
+          }}
+          onClose={() => {
+            if (analyzeMutation.isPending) return;
+            setIntakeDialogType(null);
+            setAnalysisIntakeError("");
+          }}
+          onSubmit={submitAnalysisIntake}
+        />
+      ) : null}
       <section className="rounded-2xl border border-surface-line bg-white px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -945,6 +1120,47 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
             </div>
           </dl>
         </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-surface-line bg-white shadow-soft">
+        <div className="flex items-start gap-3 border-b border-surface-line px-4 py-4 sm:px-5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ink-950 text-white"><Layers3 className="h-4 w-4" aria-hidden="true" /></span>
+          <div><h2 className="text-sm font-semibold text-ink-950">Choose an analysis</h2><p className="mt-1 text-xs leading-5 text-ink-500">Run the analysis you need. Each type keeps its own versions, result, and report.</p></div>
+        </div>
+        {analysisTypesQuery.isLoading ? (
+          <div className="p-5 text-sm text-ink-600">Loading available analysis types...</div>
+        ) : analysisTypesQuery.isError ? (
+          <div className="p-4"><Alert tone="error">{analysisTypesQuery.error instanceof ApiError ? analysisTypesQuery.error.message : "Unable to load analysis types."}</Alert></div>
+        ) : deliverables.length ? (
+          <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
+            {deliverables.map((deliverable) => {
+              const selected = selectedDeliverable?.id === deliverable.id;
+              const failed = ["failed", "timed_out", "unable_to_analyse"].includes(deliverable.status);
+              const completed = ["completed", "completed_with_warnings"].includes(deliverable.status);
+              return (
+                <article key={deliverable.id} className={["flex min-h-48 flex-col overflow-hidden rounded-2xl border transition", selected ? "border-ink-950 shadow-[0_16px_36px_rgba(17,17,17,0.10)]" : "border-ink-200 hover:border-ink-400"].join(" ")}>
+                  <button type="button" aria-pressed={selected} onClick={() => setSelectedDeliverableId(deliverable.id)} className={["flex flex-1 items-start gap-3 p-4 text-left", selected ? "bg-ink-950 text-white" : "bg-white text-ink-950"].join(" ")}>
+                    <span className={["mt-1 h-2.5 w-2.5 shrink-0 rounded-full", deliverable.isActiveJob ? "animate-pulse bg-sky-400" : completed ? "bg-emerald-500" : failed ? "bg-red-500" : deliverable.latestVersionNumber !== null ? "bg-amber-500" : selected ? "bg-white/35" : "bg-ink-200"].join(" ")} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">{deliverable.name}</span>
+                      <span className={["mt-1 block text-xs leading-5", selected ? "text-white/60" : "text-ink-500"].join(" ")}>{deliverable.description || deliverable.workflowType.replace(/_/g, " ")}</span>
+                      <span className={["mt-3 block text-[11px] font-semibold uppercase tracking-[0.12em]", selected ? "text-white/70" : failed ? "text-red-700" : "text-ink-600"].join(" ")}>{analysisTypeStatusLabel(deliverable)}</span>
+                    </span>
+                  </button>
+                  <div className="border-t border-ink-200 bg-ink-50 p-3">
+                    <Button type="button" variant={deliverable.isActiveJob ? "secondary" : "primary"} className="w-full" isLoading={deliverable.isActiveJob ? cancelMutation.isPending : analyzeMutation.isPending && analyzeMutation.variables?.type.id === deliverable.id} disabled={deliverable.isActiveJob ? cancelMutation.isPending : !deliverable.canRun || analyzeMutation.isPending || cancelMutation.isPending} onClick={() => deliverable.isActiveJob ? cancelMutation.mutate() : requestAnalysis(deliverable)}>
+                      {!deliverable.isActiveJob ? <Play className="h-4 w-4" aria-hidden="true" /> : null}
+                      {analysisTypeActionLabel(deliverable)}
+                    </Button>
+                    {!deliverable.canRun && !deliverable.isActiveJob ? <p className="mt-2 text-center text-[11px] leading-4 text-ink-500">{deliverable.blockedReason}</p> : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-5 text-sm text-ink-600">No active analysis types are configured for this case type.</div>
+        )}
       </section>
 
       <AnalysisBanner
@@ -1054,32 +1270,10 @@ export function CaseDetails({ caseItem }: { caseItem: unknown }) {
         <aside className="min-w-0 space-y-5 xl:sticky xl:top-6">
           <section className="space-y-4 rounded-2xl border border-surface-line bg-white p-5 shadow-soft">
             <SectionDivider
-              title="Case controls"
-              description="Run, refresh, or export this analysis."
+              title={selectedDeliverable?.name || "Case controls"}
+              description="View versions or export the selected analysis result."
             />
             <CommandBarGroup className="xl:flex-col">
-              <Button
-                type="button"
-                onClick={() => analyzeMutation.mutate()}
-                isLoading={analyzeMutation.isPending || (running && !cancelMutation.isPending)}
-                disabled={!caseId || running || cancelMutation.isPending}
-                className="w-full"
-              >
-                {!analyzeMutation.isPending && !running ? (
-                  <Play className="h-4 w-4" aria-hidden="true" />
-                ) : null}
-                {running ? "Analyzing..." : "Run Analysis"}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => cancelMutation.mutate()}
-                isLoading={cancelMutation.isPending}
-                disabled={!caseId || !running || analyzeMutation.isPending}
-                className="w-full"
-              >
-                Cancel Analysis
-              </Button>
               <Button
                 type="button"
                 variant="secondary"

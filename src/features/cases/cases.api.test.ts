@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeAnalysisVersionsResponse } from "./cases.api";
+import { normalizeAnalysisVersionsResponse, normalizeCaseAnalysisTypesResponse } from "./cases.api";
 
 describe("analysis version evidence normalization", () => {
   it("normalizes the production evidence explorer contract", () => {
@@ -10,6 +10,11 @@ describe("analysis version evidence normalization", () => {
             analysisId: "analysis-1",
             versionNumber: 3,
             status: "completed",
+            linkedCaseType: {
+              id: "record-of-advice",
+              name: "Record of Advice",
+              workflowType: "record_of_advice",
+            },
             evidenceExplorer: {
               version: 1,
               available: true,
@@ -45,6 +50,11 @@ describe("analysis version evidence normalization", () => {
     });
 
     expect(result).toHaveLength(1);
+    expect(result[0].linkedCaseType).toEqual({
+      id: "record-of-advice",
+      name: "Record of Advice",
+      workflowType: "record_of_advice",
+    });
     expect(result[0].evidenceExplorer).toMatchObject({
       available: true,
       coverage: 0.75,
@@ -83,5 +93,36 @@ describe("analysis version evidence normalization", () => {
     });
 
     expect(result[0].evidenceExplorer).toBeNull();
+  });
+});
+
+describe("case analysis type normalization", () => {
+  it("keeps per-type state, required questions, and blocking information", () => {
+    const result = normalizeCaseAnalysisTypesResponse({
+      data: {
+        analysisTypes: [{
+          id: "analysis-type-1",
+          name: "Record of Advice",
+          workflowType: "record_of_advice",
+          status: "queued",
+          latestVersionNumber: 2,
+          canRun: false,
+          blockedReason: "Another analysis is currently running",
+          isActiveJob: true,
+          intakeData: { review_scope: "renewal" },
+          intakeFields: [{ key: "review_scope", label: "Review scope", type: "select", options: ["renewal", "claim"], required: true }],
+        }],
+      },
+    });
+
+    expect(result).toEqual([expect.objectContaining({
+      id: "analysis-type-1",
+      status: "queued",
+      latestVersionNumber: 2,
+      canRun: false,
+      isActiveJob: true,
+      intakeData: { review_scope: "renewal" },
+      intakeFields: [expect.objectContaining({ key: "review_scope", required: true })],
+    })]);
   });
 });
